@@ -48,3 +48,27 @@ export function Plane(props: IconProps) {
     </Svg>
   );
 }
+
+export function ArrowUpRight(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M7 4.5h12.5V17h-3.2V9.95L6.25 20 4 17.75 14.05 7.7H7z" />
+    </Svg>
+  );
+}
+
+export function Check(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M9.4 15.6 4.95 11.15 2.6 13.5l6.8 6.8L21.4 8.3l-2.35-2.35z" />
+    </Svg>
+  );
+}
+
+export function Close(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M18.6 3.05 12 9.65 5.4 3.05 3.05 5.4 9.65 12l-6.6 6.6 2.35 2.35L12 14.35l6.6 6.6 2.35-2.35L14.35 12l6.6-6.6z" />
+    </Svg>
+  );
+}

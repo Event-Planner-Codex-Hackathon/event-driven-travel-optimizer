@@ -15,22 +15,31 @@ import styles from "./Landing.module.css";
 
 const WIDE_MIN_WIDTH = 720;
 
+export type CustomBoard = { wide: BoardRow[]; narrow: BoardRow[]; readout: string };
+
 type Props = {
-  state: BoardStateId;
+  /** A landing story state, or pass `custom` rows instead. */
+  state?: BoardStateId;
+  custom?: CustomBoard;
   reducedMotion: boolean;
 };
 
-export function BoardStage({ state, reducedMotion }: Props) {
+export function BoardStage({ state = "intro", custom, reducedMotion }: Props) {
   const frameRef = useRef<HTMLDivElement>(null);
   const canvasHostRef = useRef<HTMLDivElement>(null);
   const handleRef = useRef<BoardHandle | null>(null);
+  const pick = (cols: number): BoardRow[] =>
+    custom ? (cols >= WIDE_COLUMNS ? custom.wide : custom.narrow) : rowsFor(state, cols);
+  const rowsKey = custom ? JSON.stringify(custom) : state;
+  const pickRef = useRef(pick);
   const stateRef = useRef(state);
   const [columns, setColumns] = useState(WIDE_COLUMNS);
   const [webglReady, setWebglReady] = useState(false);
 
   useEffect(() => {
     stateRef.current = state;
-  }, [state]);
+    pickRef.current = pick;
+  });
 
   // Pick the column count from the frame width.
   useEffect(() => {
@@ -70,7 +79,7 @@ export function BoardStage({ state, reducedMotion }: Props) {
         handle = created;
         handleRef.current = created;
         setWebglReady(true);
-        void created.setRows(rowsFor(stateRef.current, columns), {
+        void created.setRows(pickRef.current(columns), {
           stagger: 700,
           instant: reducedMotion,
         });
@@ -87,13 +96,13 @@ export function BoardStage({ state, reducedMotion }: Props) {
     };
   }, [columns, reducedMotion]);
 
-  // Flip to the current story state.
+  // Flip to the current story state or custom rows.
   useEffect(() => {
-    void handleRef.current?.setRows(rowsFor(state, columns), {
+    void handleRef.current?.setRows(pickRef.current(columns), {
       stagger: 450,
       instant: reducedMotion,
     });
-  }, [state, columns, reducedMotion]);
+  }, [rowsKey, columns, reducedMotion]);
 
   // Render only while the board is on screen.
   useEffect(() => {
@@ -127,10 +136,10 @@ export function BoardStage({ state, reducedMotion }: Props) {
       data-columns={columns}
       data-webgl={webglReady ? "ready" : "pending"}
     >
-      <FallbackBoard rows={rowsFor(state, columns)} columns={columns} />
+      <FallbackBoard rows={pick(columns)} columns={columns} />
       <div ref={canvasHostRef} className={styles.boardCanvas} aria-hidden="true" />
       <p className="visually-hidden" aria-live="polite">
-        {BOARD_READOUT[state]}
+        {custom ? custom.readout : BOARD_READOUT[state]}
       </p>
     </div>
   );
