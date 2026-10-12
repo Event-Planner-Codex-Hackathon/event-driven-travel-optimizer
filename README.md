@@ -29,6 +29,12 @@ npm test                     # planner, parser and constraint tests
 | `TICKETMASTER_MAX_CALLS_PER_HOUR` / `EVENTBRITE_MAX_CALLS_PER_HOUR` | No | Each provider’s per-process rolling hourly cap (default 40); failed attempts count. |
 | `TICKETMASTER_API_KEY` | No | Ticketmaster event search. |
 | `EVENTBRITE_TOKEN` | No | Import one Eventbrite event by link. |
+| `GEOAPIFY_API_KEY` | No | Server-only nearby sights for a selected route via `/api/routes/{routeId}/places`. |
+| `GEOAPIFY_MAX_CALLS_PER_HOUR` / `GEOAPIFY_MAX_CALLS_TOTAL` | No | Downward configurable ceilings: default/max 20 per hour, 100 total per process. |
+| `OPENAI_API_KEY` | No | Server-only natural-language requirement extraction in the existing optimize endpoint. |
+| `OPENAI_MODEL` | No | Runtime model, default `gpt-6.1-sol`. |
+| `OPENAI_SPEND_AUTHORIZED` | No | Must be `true` after spend/event-credit confirmation; otherwise no OpenAI calls. |
+| `OPENAI_MAX_CALLS_PER_HOUR` / `OPENAI_MAX_CALLS_TOTAL` | No | Downward configurable ceilings: default/max 10 per hour, 20 total per process. |
 
 Frankfurter (exchange rates) and Open-Meteo (weather) need no key.
 

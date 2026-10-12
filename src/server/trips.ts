@@ -284,10 +284,11 @@ export function optimizeTrip(
   input: { text?: string; overrides?: RequestOverrides },
   today: string = todayLocal(),
   fx?: FxInfo | null,
+  interpreted?: ParsedRequest,
 ): TripResponse {
-  const parsed = input.text?.trim()
+  const parsed = interpreted ?? (input.text?.trim()
     ? parseRequestText(input.text, today)
-    : { optionalCities: [], preferences: {}, assumptions: [], issues: [], event: {} } as ParsedRequest;
+    : { optionalCities: [], preferences: {}, assumptions: [], issues: [], event: {} } as ParsedRequest);
   const draft = applyOverrides(draftFromParsed(parsed), input.overrides);
   const assumptions = [...parsed.assumptions];
   const { request, questions } = finalize(draft, parsed.issues, assumptions, fx);

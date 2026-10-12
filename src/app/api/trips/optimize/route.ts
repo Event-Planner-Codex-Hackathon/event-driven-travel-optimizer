@@ -2,9 +2,11 @@ import { NextResponse } from "next/server";
 import { optimizeBodySchema, type TripResponse } from "@/contract/trip";
 import { apiError, readBodyOr413 } from "@/server/http";
 import { getFxRates } from "@/server/providers/fx";
-import { optimizeTrip } from "@/server/trips";
+import { optimizeWithInterpretation } from "@/server/interpretation";
+import { attachGuestCookie, guestFromRequest } from "@/server/guest";
 
 export const runtime = "nodejs";
+export const maxDuration = 30;
 
 export async function POST(req: Request) {
   const body = await readBodyOr413(req);
@@ -13,7 +15,9 @@ export async function POST(req: Request) {
   if (!parsed.success) return apiError(400, "invalid_body", "Invalid request body.", parsed.error.issues);
   try {
     const fx = await getFxRates();
-    return NextResponse.json<TripResponse>(optimizeTrip(parsed.data, undefined, fx));
+    const guest = guestFromRequest(req);
+    const result = await optimizeWithInterpretation(parsed.data, fx, guest);
+    return attachGuestCookie(NextResponse.json<TripResponse>(result), guest);
   } catch (err) {
     console.error("optimize failed", err);
     return apiError(500, "internal", "Could not plan this trip.");

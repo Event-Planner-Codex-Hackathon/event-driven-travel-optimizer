@@ -12,13 +12,15 @@ import type { NextResponse } from "next/server";
 export const GUEST_COOKIE = "eh_guest";
 const COOKIE_MAX_AGE_S = 30 * 24 * 60 * 60;
 
-export type GuestAction = "priceCheck" | "quote" | "hero" | "eventSearch";
+export type GuestAction = "priceCheck" | "quote" | "hero" | "eventSearch" | "interpret" | "nearby";
 
 export const GUEST_LIMITS: Record<GuestAction, { max: number; windowMinutes: number }> = {
   priceCheck: { max: 5, windowMinutes: 60 },
   quote: { max: 10, windowMinutes: 60 },
   hero: { max: 3, windowMinutes: 60 },
   eventSearch: { max: 10, windowMinutes: 60 },
+  interpret: { max: 5, windowMinutes: 60 },
+  nearby: { max: 10, windowMinutes: 60 },
 };
 
 /** Per-IP allowance = this many guests' worth, to tolerate shared networks. */

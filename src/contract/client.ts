@@ -7,6 +7,7 @@ import type {
   ApiError,
   HeroResponse,
   NormalizedRequest,
+  NearbyPlacesResponse,
   OptimizeBody,
   QuoteBody,
   QuoteResponse,
@@ -121,3 +122,10 @@ export const importEvent = (url: string, signal?: AbortSignal) => post<EventImpo
 /** Daily forecast for a catalog city; days past the forecast horizon are marked, not guessed. */
 export const getWeather = (city: string, start: string, end: string, signal?: AbortSignal) =>
   get<WeatherResponse>(`/api/weather?${new URLSearchParams({ city, start, end })}`, signal);
+
+
+/** Optional places around the selected route's catalog city centres. */
+export const getNearbyPlaces = (route: RouteOption, signal?: AbortSignal) =>
+  post<NearbyPlacesResponse>(`/api/routes/${encodeURIComponent(route.id)}/places`, {
+    route: { cities: [...new Set(route.citySequence.filter((s) => s.purpose !== "origin").map((s) => s.city))] },
+  }, signal);
