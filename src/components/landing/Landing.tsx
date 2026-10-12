@@ -1,6 +1,7 @@
 "use client";
 
 import "./landing.css";
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { BoardStage } from "./BoardStage";
 import { HallBackdrop } from "./HallBackdrop";
@@ -8,7 +9,6 @@ import type { BoardStateId } from "./boardStates";
 import { readFont, signFont } from "./fonts";
 import { ArrowDown, ArrowRight, Plane } from "./Icons";
 import styles from "./Landing.module.css";
-import { planTrip } from "./planTrip";
 import { TripForm } from "./TripForm";
 
 type Step = { id: BoardStateId; label: string };
@@ -125,12 +125,15 @@ export function Landing() {
           <span className={styles.wordmarkTile}>
             <Plane />
           </span>
-          EventHopper
+          <span className={styles.wordmarkText}>EventHopper</span>
         </a>
         <nav className={styles.nav} aria-label="Main">
-          <button type="button" className={styles.navLink} onClick={() => goToStep(1)}>
+          <button type="button" className={`${styles.navLink} ${styles.navStory}`} onClick={() => goToStep(1)}>
             How it works
           </button>
+          <Link className={`${styles.navLink} ${styles.navTrips}`} href="/trips">
+            My trips
+          </Link>
           <a className={styles.navCta} href="#plan">
             Plan a trip
             <ArrowRight className={styles.navArrow} />
@@ -251,12 +254,12 @@ export function Landing() {
               Plan around your event
             </h2>
             <p className={styles.planIntro}>
-              Start from the SWITCH example or make it yours. Your event dates and budget stay fixed while we
-              compare routes around them.
+              Fill in the form, or describe your trip in your own words. Your event dates and budget stay fixed
+              while we compare routes around them.
             </p>
           </div>
           <div className={styles.planPanel}>
-            <TripForm onPlan={planTrip} />
+            <TripForm />
           </div>
         </section>
       </main>

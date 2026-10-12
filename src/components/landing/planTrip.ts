@@ -1,93 +1,135 @@
-import { ApiRequestError, optimizeTrip } from "@/contract/client";
-import type { Money, RequestOverrides, RouteOption } from "@/contract/trip";
-import type { TripDraft } from "./TripForm";
+import type { LodgingStyle, OptimizeBody } from "@/contract/trip";
 
-const STOP_CITY = { bangkok: "Bangkok", taipei: "Taipei" } as const;
+// Pure helpers for the landing form: defaults, validation and the request body.
 
-const amount = new Intl.NumberFormat("en-GB", { maximumFractionDigits: 0 });
+export const ORIGINS = ["Istanbul", "Ankara", "Izmir"] as const;
+export type Origin = (typeof ORIGINS)[number];
 
-export function formatMoney(money: Money) {
-  return `${amount.format(money.amountMinor / 100)} ${money.currency}`;
-}
+export const PLACES = ["Bangkok", "Taipei", "Kuala Lumpur", "Hong Kong", "Tokyo", "Dubai"] as const;
+export type Place = (typeof PLACES)[number];
+export const MAX_PLACES = 2;
 
-export type RouteSummary = {
-  id: string;
-  label: string;
-  title: string;
-  path: string;
-  total: string;
-  budget: string;
-  withinBudget: boolean;
-  recommended: boolean;
-  difference: string;
-  highlight: string | null;
+export const LODGING: ReadonlyArray<{ value: LodgingStyle; label: string }> = [
+  { value: "budget", label: "Budget" },
+  { value: "standard", label: "Standard" },
+  { value: "comfort", label: "Comfort" },
+];
+
+export const MAX_BUDGET_TRY = 10_000_000;
+export const TEXT_MIN = 20;
+export const TEXT_MAX = 2000;
+
+export type TripDraft = {
+  event: { name: string; city: string; startDate: string; endDate: string; sourceUrl: string };
+  origin: Origin;
+  departFrom: string;
+  returnBy: string;
+  budgetTry: number;
+  places: Place[];
+  lodging: LodgingStyle;
 };
 
-export type PlanResult =
-  | { kind: "routes"; message: string; routes: RouteSummary[] }
-  | { kind: "message"; message: string };
+export const SWITCH_EXAMPLE: TripDraft = {
+  event: {
+    name: "SWITCH 2026",
+    city: "Singapore",
+    startDate: "2026-10-27",
+    endDate: "2026-10-29",
+    sourceUrl: "https://www.switchsg.org/",
+  },
+  origin: "Istanbul",
+  departFrom: "2026-10-21",
+  returnBy: "2026-11-01",
+  budgetTry: 100000,
+  places: ["Bangkok"],
+  lodging: "standard",
+};
 
-export function toOverrides(draft: TripDraft): RequestOverrides {
-  return {
-    origin: { city: draft.origin },
-    event: {
-      name: draft.event.name,
-      city: draft.event.city,
-      startDate: draft.event.startDate,
-      endDate: draft.event.endDate,
-    },
-    travelWindow: { startDate: draft.departFrom, endDate: draft.returnBy },
-    budget: { amountMinor: Math.round(draft.budgetTry * 100), currency: "TRY" },
-    optionalCities: draft.optionalStop === "none" ? [] : [{ city: STOP_CITY[draft.optionalStop] }],
-  };
+export type DraftErrors = Partial<Record<"eventDates" | "departure" | "returnBy" | "budget", string>>;
+
+const dayFormat = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", timeZone: "UTC" });
+export const wholeNumber = new Intl.NumberFormat("en-GB", { maximumFractionDigits: 0 });
+
+const toUtc = (date: string) => new Date(`${date}T00:00:00Z`);
+
+export const isDate = (date: string) =>
+  /^\d{4}-\d{2}-\d{2}$/.test(date) && !Number.isNaN(toUtc(date).getTime());
+
+/** YYYY-MM-DD moved by whole days. */
+export function shiftDay(date: string, days: number): string {
+  const d = toUtc(date);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
 }
 
-// The first planner highlight that not every route shares, so each row says what sets it apart.
-function distinctHighlight(option: RouteOption, all: RouteOption[]): string | null {
-  const others = all.filter((other) => other.id !== option.id);
-  return option.highlights.find((line) => !others.every((other) => other.highlights.includes(line))) ?? null;
-}
-
-function summarize(option: RouteOption, all: RouteOption[], recommendedId: string | null): RouteSummary {
-  const { total, budget, remaining } = option.costBreakdown;
-  const within = option.feasibility.withinBudget;
-  const gap = formatMoney({ ...remaining, amountMinor: Math.abs(remaining.amountMinor) });
-  return {
-    id: option.id,
-    label: option.label,
-    title: option.title,
-    path: option.citySequence.map((stop) => stop.city).join(" → "),
-    total: formatMoney(total),
-    budget: formatMoney(budget),
-    withinBudget: within,
-    recommended: option.id === recommendedId,
-    difference: within ? `${gap} under budget` : `${gap} over budget`,
-    highlight: distinctHighlight(option, all),
-  };
-}
-
-// Sends the form to the planner and returns what the form should show.
-export async function planTrip(draft: TripDraft, signal?: AbortSignal): Promise<PlanResult> {
-  try {
-    const response = await optimizeTrip({ overrides: toOverrides(draft) }, signal);
-    if (response.status === "needs_input") {
-      return {
-        kind: "message",
-        message: response.clarificationQuestions[0] ?? "We need a little more detail before we can compare routes.",
-      };
-    }
-    const routes = response.options.map((option) =>
-      summarize(option, response.options, response.recommendedOptionId),
-    );
-    const message = response.recommendedOptionId
-      ? `${routes.length} routes compared. All prices are estimates.`
-      : `${routes.length} routes compared, but none fits your budget. All prices are estimates.`;
-    return { kind: "routes", message, routes };
-  } catch (error) {
-    if ((error as Error).name === "AbortError") throw error;
-    if (error instanceof ApiRequestError && error.code === "network") {
-      return { kind: "message", message: "We couldn’t reach the planner. Check your connection and try again." };
-    }
-    return { kind: "message", message: "The planner couldn’t compare routes just now. Try again in a moment." };
+export function validateDraft(draft: TripDraft): DraftErrors {
+  const errors: DraftErrors = {};
+  const { startDate, endDate } = draft.event;
+  const eventOk = isDate(startDate) && isDate(endDate) && endDate >= startDate;
+  if (!eventOk) {
+    errors.eventDates = "Set both event days. The event has to end on or after the day it starts.";
   }
+  if (!isDate(draft.departFrom)) {
+    errors.departure = `Choose the earliest day you can leave ${draft.origin}.`;
+  } else if (eventOk && draft.departFrom >= startDate) {
+    errors.departure = `Leave before the event starts on ${dayFormat.format(toUtc(startDate))}. Pick an earlier date.`;
+  }
+  if (!isDate(draft.returnBy)) {
+    errors.returnBy = `Choose the latest day you can be back in ${draft.origin}.`;
+  } else if (eventOk && draft.returnBy <= endDate) {
+    errors.returnBy = `Be back after the event ends on ${dayFormat.format(toUtc(endDate))}. Pick a later date.`;
+  }
+  if (!Number.isFinite(draft.budgetTry) || draft.budgetTry <= 0) {
+    errors.budget = "Enter your total budget in Turkish lira, above zero.";
+  } else if (draft.budgetTry > MAX_BUDGET_TRY) {
+    errors.budget = `Enter a budget of ${wholeNumber.format(MAX_BUDGET_TRY)} TRY or less.`;
+  }
+  return errors;
 }
+
+export function validateText(text: string): string | null {
+  const length = text.trim().length;
+  if (length < TEXT_MIN) {
+    return `Add a little more detail: at least ${TEXT_MIN} characters, with your event, its dates and your budget.`;
+  }
+  if (text.length > TEXT_MAX) {
+    return `Shorten your description to ${wholeNumber.format(TEXT_MAX)} characters or fewer. It has ${wholeNumber.format(
+      text.length,
+    )} now.`;
+  }
+  return null;
+}
+
+export function draftToBody(draft: TripDraft): OptimizeBody {
+  return {
+    overrides: {
+      origin: { city: draft.origin },
+      event: {
+        name: draft.event.name,
+        city: draft.event.city,
+        startDate: draft.event.startDate,
+        endDate: draft.event.endDate,
+      },
+      travelWindow: { startDate: draft.departFrom, endDate: draft.returnBy },
+      budget: { amountMinor: Math.round(draft.budgetTry) * 100, currency: "TRY" },
+      optionalCities: draft.places.slice(0, MAX_PLACES).map((city) => ({ city })),
+      preferences: { lodgingStyle: draft.lodging },
+    },
+  };
+}
+
+export const textToBody = (text: string): OptimizeBody => ({ text: text.trim() });
+
+// Board flaps only carry A-Z 0-9 and a little punctuation.
+function boardSafe(value: string): string {
+  return value
+    .normalize("NFKD")
+    .replace(/[̀-ͯ]/g, "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9 .,\-/:']/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export const draftLabel = (draft: TripDraft) => `${boardSafe(draft.origin)} > ${boardSafe(draft.event.city)}`;
+export const TEXT_LABEL = "YOUR TRIP";

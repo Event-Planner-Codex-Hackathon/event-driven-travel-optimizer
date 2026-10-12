@@ -495,3 +495,28 @@
     display: none;
   }
 }
+
+.navLink,
+.navCta {
+  white-space: nowrap;
+}
+
+@media (max-width: 420px) {
+  .wordmarkText {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .nav {
+    gap: 0.9rem;
+  }
+
+  .navCta {
+    padding-inline: 0.7rem;
+    font-size: 1.1rem;
+  }
+}

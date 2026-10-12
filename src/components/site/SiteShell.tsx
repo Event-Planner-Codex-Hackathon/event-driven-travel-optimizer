@@ -55,7 +55,7 @@ export function SiteHeader({ current }: { current?: "plan" | "trips" }) {
         <span className={styles.wordmarkTile}>
           <Plane />
         </span>
-        EventHopper
+        <span className={styles.wordmarkText}>EventHopper</span>
       </Link>
       <nav className={styles.nav} aria-label="Main">
         <Link className={styles.navLink} href="/trips" aria-current={current === "trips" ? "page" : undefined}>

@@ -675,8 +675,128 @@
 }
 
 /* ---------- Form ---------- */
+.planner,
 .form {
   display: grid;
+}
+
+/* ---------- Start mode switch ---------- */
+.modeBar {
+  padding: 1.25rem;
+}
+
+.modeTabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.modeTab {
+  appearance: none;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3.25rem;
+  padding: 0.4rem 1rem;
+  border: 2px solid var(--ink);
+  background: var(--enamel);
+  color: var(--ink);
+  font-family: var(--font-sign-stack);
+  font-weight: 600;
+  font-size: 1.3rem;
+  line-height: 1.1;
+  text-align: center;
+  cursor: pointer;
+  transition: background-color 0.2s var(--ease-out), color 0.2s var(--ease-out);
+}
+
+.modeTab + .modeTab {
+  border-left-width: 0;
+}
+
+.modeTab:hover {
+  background: oklch(0.95 0.04 91);
+}
+
+.modeTab[aria-selected="true"] {
+  background: var(--ink);
+  color: var(--signal);
+}
+
+.modeTab:focus-visible {
+  z-index: 1;
+  outline: 3px solid var(--ink);
+  outline-offset: 3px;
+}
+
+/* ---------- Describe your trip ---------- */
+.describe {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1.5rem 1.25rem 1.75rem;
+  border-top: 1px solid var(--enamel-line);
+}
+
+.describeHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+}
+
+.exampleButton:hover {
+  text-decoration-thickness: 3px;
+}
+
+.describeHelp {
+  display: grid;
+  gap: 0.35rem;
+  max-width: 60ch;
+  font-size: var(--step--1);
+  line-height: 1.45;
+  color: var(--muted-ink);
+}
+
+.describeHelp p,
+.describeHelp ul {
+  margin: 0;
+}
+
+.describeHelp ul {
+  display: grid;
+  gap: 0.1rem;
+  padding-left: 1.2em;
+}
+
+.input.textarea {
+  height: auto;
+  min-height: 12.5rem;
+  padding: 0.8rem 0.85rem;
+  line-height: 1.55;
+  font-variant-numeric: normal;
+  resize: vertical;
+}
+
+.textMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: start;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+}
+
+.counter {
+  margin: 0 0 0 auto;
+  font-size: var(--step--1);
+  line-height: 1.45;
+  color: var(--muted-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.counter[data-over] {
+  color: var(--alert);
+  font-weight: 500;
 }
 
 .eventRow {
@@ -765,7 +885,6 @@
   min-width: 0;
 }
 
-.legendTitle,
 .eventEditor > legend {
   float: left;
   width: 100%;
@@ -798,7 +917,7 @@
   margin-bottom: 0.45rem;
 }
 
-.stopGroup {
+.wide {
   grid-column: 1 / -1;
 }
 
@@ -846,21 +965,26 @@
   gap: 0.75rem;
 }
 
-.staticValue {
+.selectWrap {
+  position: relative;
   display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 0.25rem 0.6rem;
-  min-height: 3.25rem;
-  margin: 0;
-  padding: 0.75rem 0.85rem;
-  background: oklch(0.955 0.004 255);
-  font-size: 1.05rem;
 }
 
-.staticNote {
-  font-size: var(--step--1);
-  color: var(--muted-ink);
+.select {
+  appearance: none;
+  padding-right: 2.75rem;
+  cursor: pointer;
+}
+
+.selectIcon {
+  position: absolute;
+  right: 0.9rem;
+  top: 50%;
+  width: 1.05rem;
+  height: 1.05rem;
+  color: var(--ink);
+  transform: translateY(-50%);
+  pointer-events: none;
 }
 
 .money {
@@ -900,27 +1024,31 @@
   color: var(--alert);
 }
 
-.stops {
+/* Toggle chips: the native input is overlaid so it stays operable. */
+.chips {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
 }
 
-.stop {
+.chip {
   position: relative;
 }
 
-.stop input {
+.chip input {
   position: absolute;
   inset: 0;
+  width: 100%;
+  height: 100%;
   opacity: 0;
   margin: 0;
   cursor: pointer;
 }
 
-.stop span {
+.chip > span {
   display: inline-flex;
   align-items: center;
+  gap: 0.55rem;
   min-height: 3rem;
   padding: 0 1.3rem;
   border: 2px solid var(--ink);
@@ -931,18 +1059,43 @@
   transition: background-color 0.2s var(--ease-out), color 0.2s var(--ease-out);
 }
 
-.stop:hover span {
+.chip:hover > span {
   background: oklch(0.95 0.04 91);
 }
 
-.stop input:checked + span {
+.chip input:checked + span {
   background: var(--ink);
   color: var(--signal);
 }
 
-.stop input:focus-visible + span {
+.chip input:focus-visible + span {
   outline: 3px solid var(--ink);
   outline-offset: 3px;
+}
+
+.chipBox {
+  display: grid;
+  place-items: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  border: 2px solid currentColor;
+  flex: none;
+}
+
+.chipBox svg {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.chip[data-blocked] input {
+  cursor: not-allowed;
+}
+
+.chip[data-blocked] > span,
+.chip[data-blocked]:hover > span {
+  border-color: var(--enamel-line);
+  background: oklch(0.955 0.004 255);
+  color: var(--muted-ink);
 }
 
 .submitRow {
@@ -959,144 +1112,6 @@
   margin: 0;
   font-size: var(--step--1);
   color: var(--muted-ink);
-}
-
-.status {
-  margin: 0;
-  padding: 0 1.25rem;
-  font-size: var(--step--1);
-  line-height: 1.45;
-}
-
-.status:not(:empty) {
-  padding-bottom: 1.25rem;
-}
-
-.status[data-tone="done"] {
-  font-weight: 500;
-}
-
-/* ---------- Route results ---------- */
-.routes {
-  display: grid;
-  gap: 2px;
-  margin: 0;
-  padding: 0 1.25rem 1.25rem;
-  list-style: none;
-}
-
-.route {
-  display: grid;
-  grid-template-columns: auto auto minmax(0, 1fr) auto;
-  align-items: start;
-  gap: 0.4rem 1rem;
-  padding: 1rem 1.1rem;
-  background: var(--graphite);
-  color: oklch(0.95 0.008 95);
-}
-
-.routeLamp {
-  width: 0.85rem;
-  height: 0.85rem;
-  margin-top: 0.45rem;
-  border-radius: 50%;
-  background: var(--lamp-unknown);
-  box-shadow: inset 0 -2px 0 oklch(0 0 0 / 0.25);
-}
-
-.route[data-within] .routeLamp {
-  background: var(--lamp-fixed);
-}
-
-.routeLabel {
-  display: grid;
-  place-items: center;
-  width: 2rem;
-  height: 2.3rem;
-  background: oklch(0.2 0.006 255);
-  font-family: var(--font-sign-stack);
-  font-weight: 700;
-  font-size: 1.35rem;
-  line-height: 1;
-}
-
-.routeMain {
-  min-width: 0;
-}
-
-.routeTitle {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.25rem 0.6rem;
-  margin: 0;
-  font-family: var(--font-sign-stack);
-  font-weight: 700;
-  font-size: 1.35rem;
-  line-height: 1.15;
-}
-
-.routeTag {
-  padding: 0.1rem 0.45rem;
-  background: var(--signal);
-  color: var(--ink);
-  font-weight: 600;
-  font-size: 0.95rem;
-}
-
-.routePath,
-.routeNote {
-  margin: 0.2rem 0 0;
-  font-size: var(--step--1);
-  line-height: 1.45;
-  color: oklch(0.86 0.01 95);
-}
-
-.routeNote {
-  color: oklch(0.78 0.01 95);
-}
-
-.routeMoney {
-  text-align: right;
-}
-
-.routeTotal {
-  margin: 0;
-  font-family: var(--font-sign-stack);
-  font-weight: 700;
-  font-size: 1.35rem;
-  line-height: 1.15;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
-.routeEstimate {
-  font-family: var(--font-read-stack);
-  font-weight: 400;
-  font-size: var(--step--1);
-  color: oklch(0.82 0.01 95);
-}
-
-.routeDiff {
-  margin: 0.2rem 0 0;
-  font-size: var(--step--1);
-  color: var(--lamp-fixed);
-  white-space: nowrap;
-}
-
-.route:not([data-within]) .routeDiff {
-  color: oklch(0.78 0.15 28);
-}
-
-@media (max-width: 780px) {
-  .route {
-    grid-template-columns: auto auto minmax(0, 1fr);
-  }
-
-  .routeMoney {
-    grid-column: 3;
-    text-align: left;
-  }
 }
 
 /* ---------- Footer ---------- */
@@ -1161,9 +1176,20 @@
   }
 }
 
-@media (max-width: 520px) {
-  .navLink {
+@media (max-width: 640px) {
+  .navStory {
     display: none;
+  }
+}
+
+@media (max-width: 520px) {
+  .navLink:not(.navTrips) {
+    display: none;
+  }
+
+  .modeTab {
+    padding-inline: 0.6rem;
+    font-size: 1.2rem;
   }
 
   .stepLabel {
@@ -1190,5 +1216,30 @@
   .textButtonIcon,
   .fallbackBoard {
     transition: none;
+  }
+}
+
+.navLink,
+.navCta {
+  white-space: nowrap;
+}
+
+@media (max-width: 420px) {
+  .wordmarkText {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .nav {
+    gap: 0.9rem;
+  }
+
+  .navCta {
+    padding-inline: 0.7rem;
+    font-size: 1.1rem;
   }
 }

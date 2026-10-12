@@ -1,151 +1,195 @@
 "use client";
 
-import { useId, useRef, useState } from "react";
-import { ArrowRight, Lock } from "./Icons";
+import { useRouter } from "next/navigation";
+import { useEffect, useId, useRef, useState, useTransition } from "react";
+import { flushSync } from "react-dom";
+import type { OptimizeBody } from "@/contract/trip";
+import { DEMO_REQUESTS } from "@/contract/demo";
+import { formatRange } from "@/lib/format";
+import { setPendingSearch, takePendingSearch } from "@/lib/trips";
+import site from "../site/site.module.css";
+import { ArrowDown, ArrowRight, Check, Lock } from "./Icons";
 import styles from "./Landing.module.css";
-import type { PlanResult, RouteSummary } from "./planTrip";
+import {
+  LODGING,
+  MAX_PLACES,
+  ORIGINS,
+  PLACES,
+  SWITCH_EXAMPLE,
+  TEXT_LABEL,
+  TEXT_MAX,
+  draftLabel,
+  draftToBody,
+  isDate,
+  shiftDay,
+  textToBody,
+  wholeNumber,
+  validateDraft,
+  validateText,
+  type DraftErrors,
+  type Origin,
+  type Place,
+  type TripDraft,
+} from "./planTrip";
 
-export type OptionalStop = "none" | "bangkok" | "taipei";
+type Mode = "form" | "text";
 
-export type TripDraft = {
-  event: { name: string; city: string; startDate: string; endDate: string; sourceUrl: string };
-  origin: string;
-  departFrom: string;
-  returnBy: string;
-  budgetTry: number;
-  optionalStop: OptionalStop;
-};
+const MODES: ReadonlyArray<{ id: Mode; label: string }> = [
+  { id: "form", label: "Fill in the form" },
+  { id: "text", label: "Describe your trip" },
+];
 
-export const SWITCH_EXAMPLE: TripDraft = {
-  event: {
-    name: "SWITCH 2026",
-    city: "Singapore",
-    startDate: "2026-10-27",
-    endDate: "2026-10-29",
-    sourceUrl: "https://www.switchsg.org/",
-  },
-  origin: "Istanbul",
-  departFrom: "2026-10-21",
-  returnBy: "2026-11-01",
-  budgetTry: 100000,
-  optionalStop: "bangkok",
-};
+type Start = (body: OptimizeBody, label: string) => void;
 
-type Errors = Partial<Record<"eventDates" | "departure" | "returnBy" | "budget", string>>;
+export function TripForm() {
+  const id = useId();
+  const router = useRouter();
+  const [mode, setMode] = useState<Mode>("form");
+  const [restoredText, setRestoredText] = useState<string | null>(null);
+  const [busy, startTransition] = useTransition();
 
-const dayFormat = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", timeZone: "UTC" });
-const fullFormat = new Intl.DateTimeFormat("en-GB", {
-  day: "numeric",
-  month: "long",
-  year: "numeric",
-  timeZone: "UTC",
-});
-const tryFormat = new Intl.NumberFormat("en-GB", { maximumFractionDigits: 0 });
+  // Coming back after the planner asked for more detail: reopen the description that was sent.
+  useEffect(() => {
+    const text = takePendingSearch()?.body.text;
+    if (text) {
+      setMode("text");
+      setRestoredText(text);
+    }
+  }, []);
+  const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
-function toUtc(date: string) {
-  return new Date(`${date}T00:00:00Z`);
+  const start: Start = (body, label) => {
+    setPendingSearch({ body, label, createdAt: new Date().toISOString() });
+    startTransition(() => router.push("/plan/searching"));
+  };
+
+  const tabId = (mode: Mode) => `${id}-tab-${mode}`;
+  const panelId = (mode: Mode) => `${id}-panel-${mode}`;
+
+  function onTabKey(event: React.KeyboardEvent<HTMLDivElement>) {
+    const current = MODES.findIndex((m) => m.id === mode);
+    let next = current;
+    if (event.key === "ArrowRight" || event.key === "ArrowDown") next = (current + 1) % MODES.length;
+    else if (event.key === "ArrowLeft" || event.key === "ArrowUp") next = (current - 1 + MODES.length) % MODES.length;
+    else if (event.key === "Home") next = 0;
+    else if (event.key === "End") next = MODES.length - 1;
+    else return;
+    event.preventDefault();
+    setMode(MODES[next].id);
+    tabRefs.current[next]?.focus();
+  }
+
+  return (
+    <div className={styles.planner}>
+      <div className={styles.modeBar}>
+        <div role="tablist" aria-label="How would you like to start?" className={styles.modeTabs} onKeyDown={onTabKey}>
+          {MODES.map((item, index) => {
+            const selected = item.id === mode;
+            return (
+              <button
+                key={item.id}
+                ref={(node) => {
+                  tabRefs.current[index] = node;
+                }}
+                type="button"
+                role="tab"
+                id={tabId(item.id)}
+                aria-selected={selected}
+                aria-controls={panelId(item.id)}
+                tabIndex={selected ? 0 : -1}
+                className={styles.modeTab}
+                onClick={() => setMode(item.id)}
+              >
+                {item.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div role="tabpanel" id={panelId("form")} aria-labelledby={tabId("form")} hidden={mode !== "form"}>
+        <StandardForm labelledBy={tabId("form")} busy={busy} onStart={start} />
+      </div>
+      <div role="tabpanel" id={panelId("text")} aria-labelledby={tabId("text")} hidden={mode !== "text"}>
+        <DescribeForm
+          key={restoredText ?? "fresh"}
+          labelledBy={tabId("text")}
+          busy={busy}
+          onStart={start}
+          initialText={restoredText ?? ""}
+        />
+      </div>
+    </div>
+  );
 }
 
-function eventRange(start: string, end: string) {
-  const s = toUtc(start);
-  const e = toUtc(end);
-  if (Number.isNaN(s.getTime()) || Number.isNaN(e.getTime())) return "Dates not set";
-  if (s.getUTCMonth() === e.getUTCMonth()) {
-    return `${s.getUTCDate()}–${fullFormat.format(e)}`;
-  }
-  return `${dayFormat.format(s)} – ${fullFormat.format(e)}`;
+type FormProps = { labelledBy: string; busy: boolean; onStart: Start };
+
+function SubmitRow({ busy }: { busy: boolean }) {
+  return (
+    <div className={styles.submitRow}>
+      <p className={styles.assumptions}>Planned for 1 adult, 1 room, economy class.</p>
+      <button className={`${styles.signButton} ${styles.signButtonDark}`} type="submit" disabled={busy}>
+        <span className={styles.signArrow}>
+          <ArrowRight />
+        </span>
+        <span>{busy ? "Starting search…" : "Find routes"}</span>
+      </button>
+    </div>
+  );
 }
 
-function validate(draft: TripDraft): Errors {
-  const errors: Errors = {};
-  const { startDate, endDate } = draft.event;
-  if (!startDate || !endDate || endDate < startDate) {
-    errors.eventDates = "The event has to end on or after the day it starts.";
-  }
-  if (!draft.departFrom) {
-    errors.departure = "Choose the earliest day you can leave Istanbul.";
-  } else if (startDate && draft.departFrom >= startDate) {
-    errors.departure = `You need to leave before the event starts on ${dayFormat.format(
-      toUtc(startDate),
-    )}. Pick an earlier date.`;
-  }
-  if (!draft.returnBy) {
-    errors.returnBy = "Choose the latest day you can be back in Istanbul.";
-  } else if (endDate && draft.returnBy <= endDate) {
-    errors.returnBy = `You need to be back after the event ends on ${dayFormat.format(
-      toUtc(endDate),
-    )}. Pick a later date.`;
-  }
-  if (!Number.isFinite(draft.budgetTry) || draft.budgetTry <= 0) {
-    errors.budget = "Enter your total budget in Turkish lira, above zero.";
-  }
-  return errors;
+function eventDates(start: string, end: string) {
+  return isDate(start) && isDate(end) && end >= start ? formatRange(start, end) : "Dates not set";
 }
 
-type Props = {
-  onPlan: (draft: TripDraft, signal: AbortSignal) => Promise<PlanResult>;
-};
-
-export function TripForm({ onPlan }: Props) {
+function StandardForm({ labelledBy, busy, onStart }: FormProps) {
   const id = useId();
   const [draft, setDraft] = useState<TripDraft>(SWITCH_EXAMPLE);
-  const [budgetText, setBudgetText] = useState(tryFormat.format(SWITCH_EXAMPLE.budgetTry));
+  const [budgetText, setBudgetText] = useState(wholeNumber.format(SWITCH_EXAMPLE.budgetTry));
   const [editingEvent, setEditingEvent] = useState(false);
-  const [errors, setErrors] = useState<Errors>({});
-  const [status, setStatus] = useState<{ tone: "idle" | "busy" | "done"; text: string }>({
-    tone: "idle",
-    text: "",
-  });
-  const [routes, setRoutes] = useState<RouteSummary[]>([]);
-  const pending = useRef<AbortController | null>(null);
-  const resultsRef = useRef<HTMLOListElement>(null);
+  const [errors, setErrors] = useState<DraftErrors>({});
 
   const update = (patch: Partial<TripDraft>) => setDraft((current) => ({ ...current, ...patch }));
   const updateEvent = (patch: Partial<TripDraft["event"]>) =>
     setDraft((current) => ({ ...current, event: { ...current.event, ...patch } }));
 
-  async function submit(event: React.FormEvent<HTMLFormElement>) {
+  const atLimit = draft.places.length >= MAX_PLACES;
+  const togglePlace = (place: Place) =>
+    setDraft((current) => {
+      if (current.places.includes(place)) return { ...current, places: current.places.filter((p) => p !== place) };
+      if (current.places.length >= MAX_PLACES) return current;
+      return { ...current, places: [...current.places, place] };
+    });
+
+  function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const found = validate(draft);
-    setErrors(found);
+    const form = event.currentTarget;
+    const found = validateDraft(draft);
+    flushSync(() => {
+      setErrors(found);
+      if (found.eventDates) setEditingEvent(true);
+    });
     if (Object.keys(found).length > 0) {
-      const first = event.currentTarget.querySelector<HTMLElement>("[aria-invalid='true']");
-      first?.focus();
-      setStatus({ tone: "idle", text: "" });
+      form.querySelector<HTMLElement>("[aria-invalid='true']")?.focus();
       return;
     }
-    // A newer submit replaces any request still in flight.
-    pending.current?.abort();
-    const controller = new AbortController();
-    pending.current = controller;
-    setStatus({ tone: "busy", text: "Comparing routes around your event…" });
-    try {
-      const result = await onPlan(draft, controller.signal);
-      if (controller.signal.aborted) return;
-      setRoutes(result.kind === "routes" ? result.routes : []);
-      setStatus({ tone: "done", text: result.message });
-      if (result.kind === "routes") {
-        const smooth = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-        requestAnimationFrame(() =>
-          resultsRef.current?.scrollIntoView({ block: "nearest", behavior: smooth ? "smooth" : "auto" }),
-        );
-      }
-    } catch {
-      // Aborted by a newer submit.
-    }
+    onStart(draftToBody(draft), draftLabel(draft));
   }
 
   const fieldId = (name: string) => `${id}-${name}`;
-  const errorId = (name: keyof Errors) => (errors[name] ? `${id}-${name}-error` : undefined);
+  const errorId = (name: keyof DraftErrors) => (errors[name] ? `${id}-${name}-error` : undefined);
+  const { startDate, endDate } = draft.event;
+  const eventOk = isDate(startDate) && isDate(endDate) && endDate >= startDate;
 
   return (
-    <form className={styles.form} onSubmit={submit} noValidate aria-labelledby="plan-title">
-      <div className={styles.eventRow} data-editing={editingEvent || undefined}>
+    <form className={styles.form} onSubmit={submit} noValidate aria-labelledby={labelledBy}>
+      <div className={styles.eventRow}>
         <span className={styles.eventLamp} aria-hidden="true" />
         <div className={styles.eventText}>
           <p className={styles.eventName}>{draft.event.name}</p>
           <p className={styles.eventMeta}>
-            {draft.event.city} · {eventRange(draft.event.startDate, draft.event.endDate)}
+            {draft.event.city} · {eventDates(startDate, endDate)}
           </p>
         </div>
         <p className={styles.eventFixed}>
@@ -179,7 +223,7 @@ export function TripForm({ onPlan }: Props) {
               <input
                 className={styles.input}
                 type="date"
-                value={draft.event.startDate}
+                value={startDate}
                 onChange={(e) => updateEvent({ startDate: e.target.value })}
                 aria-invalid={errors.eventDates ? true : undefined}
                 aria-describedby={errorId("eventDates")}
@@ -190,7 +234,8 @@ export function TripForm({ onPlan }: Props) {
               <input
                 className={styles.input}
                 type="date"
-                value={draft.event.endDate}
+                value={endDate}
+                min={isDate(startDate) ? startDate : undefined}
                 onChange={(e) => updateEvent({ endDate: e.target.value })}
                 aria-invalid={errors.eventDates ? true : undefined}
                 aria-describedby={errorId("eventDates")}
@@ -207,21 +252,36 @@ export function TripForm({ onPlan }: Props) {
 
       <div className={styles.fields}>
         <div className={styles.field}>
-          <span className={styles.label}>From</span>
-          <p className={styles.staticValue}>
-            Istanbul <span className={styles.staticNote}>IST · the only origin for now</span>
-          </p>
+          <label className={styles.label} htmlFor={fieldId("origin")}>
+            From
+          </label>
+          <span className={styles.selectWrap}>
+            <select
+              id={fieldId("origin")}
+              className={`${styles.input} ${styles.select}`}
+              value={draft.origin}
+              onChange={(e) => update({ origin: e.target.value as Origin })}
+            >
+              {ORIGINS.map((city) => (
+                <option key={city} value={city}>
+                  {city}
+                </option>
+              ))}
+            </select>
+            <ArrowDown className={styles.selectIcon} />
+          </span>
         </div>
 
         <div className={styles.field}>
           <label className={styles.label} htmlFor={fieldId("depart")}>
-            Leave Istanbul from
+            Leave {draft.origin} from
           </label>
           <input
             id={fieldId("depart")}
             className={styles.input}
             type="date"
             value={draft.departFrom}
+            max={eventOk ? shiftDay(startDate, -1) : undefined}
             onChange={(e) => update({ departFrom: e.target.value })}
             aria-invalid={errors.departure ? true : undefined}
             aria-describedby={errorId("departure")}
@@ -235,13 +295,14 @@ export function TripForm({ onPlan }: Props) {
 
         <div className={styles.field}>
           <label className={styles.label} htmlFor={fieldId("return")}>
-            Back in Istanbul by
+            Back home by
           </label>
           <input
             id={fieldId("return")}
             className={styles.input}
             type="date"
             value={draft.returnBy}
+            min={eventOk ? shiftDay(endDate, 1) : undefined}
             onChange={(e) => update({ returnBy: e.target.value })}
             aria-invalid={errors.returnBy ? true : undefined}
             aria-describedby={errorId("returnBy")}
@@ -265,21 +326,23 @@ export function TripForm({ onPlan }: Props) {
               autoComplete="off"
               value={budgetText}
               onChange={(e) => {
-                const digits = e.target.value.replace(/[^\d]/g, "");
+                const digits = e.target.value.replace(/[^\d]/g, "").slice(0, 12);
                 setBudgetText(digits);
                 update({ budgetTry: digits ? Number(digits) : Number.NaN });
               }}
               onBlur={() => {
-                if (Number.isFinite(draft.budgetTry)) setBudgetText(tryFormat.format(draft.budgetTry));
+                if (Number.isFinite(draft.budgetTry)) setBudgetText(wholeNumber.format(draft.budgetTry));
               }}
               onFocus={() => setBudgetText(Number.isFinite(draft.budgetTry) ? String(draft.budgetTry) : "")}
               aria-invalid={errors.budget ? true : undefined}
               aria-describedby={[fieldId("budget-note"), errorId("budget")].filter(Boolean).join(" ")}
             />
-            <span className={styles.moneyUnit}>TRY</span>
+            <span className={styles.moneyUnit} aria-hidden="true">
+              TRY
+            </span>
           </span>
           <p className={styles.hint} id={fieldId("budget-note")}>
-            Every route is checked against it. Anything over budget is clearly marked.
+            In Turkish lira. Every route is checked against it, and anything over budget is clearly marked.
           </p>
           {errors.budget ? (
             <p className={styles.error} id={errorId("budget")}>
@@ -288,23 +351,51 @@ export function TripForm({ onPlan }: Props) {
           ) : null}
         </div>
 
-        <fieldset className={`${styles.fieldGroup} ${styles.stopGroup}`}>
-          <legend className={styles.label}>Optional stop on the way</legend>
-          <div className={styles.stops}>
-            {(
-              [
-                ["none", "No stop"],
-                ["bangkok", "Bangkok"],
-                ["taipei", "Taipei"],
-              ] as const
-            ).map(([value, label]) => (
-              <label className={styles.stop} key={value}>
+        <fieldset className={`${styles.fieldGroup} ${styles.wide}`} aria-describedby={fieldId("places-note")}>
+          <legend className={styles.label}>Places you&rsquo;d like to add</legend>
+          <p className={styles.hint} id={fieldId("places-note")} aria-live="polite">
+            {atLimit
+              ? `You've chosen ${MAX_PLACES}, the most we compare. Remove one to choose another.`
+              : `Optional. Choose up to ${MAX_PLACES} places to consider around the event.`}
+          </p>
+          <div className={styles.chips}>
+            {PLACES.map((place) => {
+              const checked = draft.places.includes(place);
+              const blocked = !checked && atLimit;
+              return (
+                <label className={styles.chip} key={place} data-blocked={blocked || undefined}>
+                  <input
+                    type="checkbox"
+                    name={fieldId("places")}
+                    value={place}
+                    checked={checked}
+                    aria-disabled={blocked || undefined}
+                    aria-describedby={blocked ? fieldId("places-note") : undefined}
+                    onChange={() => togglePlace(place)}
+                  />
+                  <span>
+                    <span className={styles.chipBox} aria-hidden="true">
+                      {checked ? <Check /> : null}
+                    </span>
+                    {place}
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+        </fieldset>
+
+        <fieldset className={`${styles.fieldGroup} ${styles.wide}`}>
+          <legend className={styles.label}>Hotel style</legend>
+          <div className={styles.chips}>
+            {LODGING.map(({ value, label }) => (
+              <label className={styles.chip} key={value}>
                 <input
                   type="radio"
-                  name={fieldId("stop")}
+                  name={fieldId("lodging")}
                   value={value}
-                  checked={draft.optionalStop === value}
-                  onChange={() => update({ optionalStop: value })}
+                  checked={draft.lodging === value}
+                  onChange={() => update({ lodging: value })}
                 />
                 <span>{label}</span>
               </label>
@@ -313,42 +404,93 @@ export function TripForm({ onPlan }: Props) {
         </fieldset>
       </div>
 
-      <div className={styles.submitRow}>
-        <p className={styles.assumptions}>Planned for 1 adult, 1 room, economy class.</p>
-        <button className={`${styles.signButton} ${styles.signButtonDark}`} type="submit" disabled={status.tone === "busy"}>
-          <span className={styles.signArrow}>
-            <ArrowRight />
-          </span>
-          <span>{status.tone === "busy" ? "Checking…" : "Find routes"}</span>
-        </button>
+      <SubmitRow busy={busy} />
+    </form>
+  );
+}
+
+function DescribeForm({ labelledBy, busy, onStart, initialText = "" }: FormProps & { initialText?: string }) {
+  const id = useId();
+  const [text, setText] = useState(initialText);
+  const [error, setError] = useState<string | null>(null);
+  const areaRef = useRef<HTMLTextAreaElement>(null);
+  const over = text.length > TEXT_MAX;
+
+  function fillExample() {
+    const example = DEMO_REQUESTS[0].text;
+    setText(example);
+    setError(null);
+    const area = areaRef.current;
+    if (!area) return;
+    requestAnimationFrame(() => {
+      area.focus();
+      area.setSelectionRange(example.length, example.length);
+    });
+  }
+
+  function submit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const found = validateText(text);
+    setError(found);
+    if (found) {
+      areaRef.current?.focus();
+      return;
+    }
+    onStart(textToBody(text), TEXT_LABEL);
+  }
+
+  const areaId = `${id}-text`;
+  const helpId = `${id}-help`;
+  const countId = `${id}-count`;
+  const errorId = `${id}-error`;
+
+  return (
+    <form className={styles.form} onSubmit={submit} noValidate aria-labelledby={labelledBy}>
+      <div className={styles.describe}>
+        <div className={styles.describeHead}>
+          <label className={styles.label} htmlFor={areaId}>
+            Describe your trip
+          </label>
+          <button type="button" className={`${site.textButton} ${styles.exampleButton}`} onClick={fillExample}>
+            Use the SWITCH example
+          </button>
+        </div>
+        <div className={styles.describeHelp} id={helpId}>
+          <p>Write it the way you&rsquo;d tell a friend. Include:</p>
+          <ul>
+            <li>where you leave from</li>
+            <li>the event, its city and its dates</li>
+            <li>your total budget in TRY</li>
+            <li>places you&rsquo;d like to add, if any</li>
+          </ul>
+          <p>Leave out personal details such as passport or card numbers.</p>
+        </div>
+        <textarea
+          ref={areaRef}
+          id={areaId}
+          className={`${styles.input} ${styles.textarea}`}
+          rows={7}
+          value={text}
+          onChange={(e) => {
+            setText(e.target.value);
+            if (error) setError(null);
+          }}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={[helpId, countId, error ? errorId : null].filter(Boolean).join(" ")}
+        />
+        <div className={styles.textMeta}>
+          {error ? (
+            <p className={styles.error} id={errorId}>
+              {error}
+            </p>
+          ) : null}
+          <p className={styles.counter} id={countId} data-over={over || undefined}>
+            {wholeNumber.format(text.length)} / {wholeNumber.format(TEXT_MAX)} characters
+          </p>
+        </div>
       </div>
-      <p className={styles.status} role="status" aria-live="polite" data-tone={status.tone}>
-        {status.text}
-      </p>
-      {routes.length > 0 && status.tone === "done" ? (
-        <ol ref={resultsRef} className={styles.routes} aria-label="Routes compared">
-          {routes.map((route) => (
-            <li className={styles.route} key={route.id} data-within={route.withinBudget || undefined}>
-              <span className={styles.routeLamp} aria-hidden="true" />
-              <span className={styles.routeLabel}>{route.label}</span>
-              <div className={styles.routeMain}>
-                <p className={styles.routeTitle}>
-                  {route.title}
-                  {route.recommended ? <span className={styles.routeTag}>Recommended</span> : null}
-                </p>
-                <p className={styles.routePath}>{route.path}</p>
-                {route.highlight ? <p className={styles.routeNote}>{route.highlight}</p> : null}
-              </div>
-              <div className={styles.routeMoney}>
-                <p className={styles.routeTotal}>
-                  {route.total} <span className={styles.routeEstimate}>estimate</span>
-                </p>
-                <p className={styles.routeDiff}>{route.difference}</p>
-              </div>
-            </li>
-          ))}
-        </ol>
-      ) : null}
+
+      <SubmitRow busy={busy} />
     </form>
   );
 }
