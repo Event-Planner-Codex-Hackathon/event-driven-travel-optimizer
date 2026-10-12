@@ -1,4 +1,4 @@
-# EventHopper API contract — v1.2.1
+# EventHopper API contract — v1.3.0
 
 Source of truth: [`src/contract/trip.ts`](../src/contract/trip.ts) (types + request validation). A typed browser client is in [`src/contract/client.ts`](../src/contract/client.ts); sample requests are in [`src/contract/demo.ts`](../src/contract/demo.ts). Change fields, nullability or status values only after both owners agree, and bump `CONTRACT_VERSION`.
 
@@ -58,7 +58,7 @@ No accounts. Issues an anonymous `eh_guest` httpOnly cookie and returns `{ guest
 
 Every `TripResponse` has `pricing: { mode, checkedAt?, providerCalls, cacheHits, notes[] }`. Show `notes` near totals whenever `mode` is not `estimates`.
 
-## Option comparison and currencies (v1.2.1)
+## Option comparison and currencies (v1.3.0)
 
 - `options[].comparison`: this option vs the baseline (recommended option, else option A): `delta.total/transport/lodging` (Money, negative = cheaper), `delta.nights/flights/connections/travelMinutes`, `addedCities`, `droppedCities`, `comparablePricing` (false when the two are priced from different sources) and a ready-to-show `summary`, e.g. `"8,208 TRY cheaper · 1 flight fewer · 2 nights less · skips Bangkok"`. Empty summary for the baseline.
 - Budgets may be given in TRY, EUR, USD or GBP (text or `overrides.budget.currency`). Non-TRY budgets are converted to TRY with Frankfurter reference rates and an assumption records the rate and its date; if no rate is available the API asks for a TRY budget. `normalizedRequest.budget` is always TRY.
@@ -96,3 +96,26 @@ Every non-2xx response: `{ "error": { "code", "message", "details?" } }`. Bodies
 | `highlights` | Deterministic "why this option" bullets built from computed facts. |
 | `pattern` | `event-focus`, `pre-event-stop`, `post-event-stop`, `lean`, `early-arrival`. |
 | `assumptions` (top level) | Applies to every option: estimate disclaimer, traveler scope, event buffers, contingency, defaults. |
+
+
+## OpenAI interpretation (v1.3.0, optional)
+
+The existing `POST /api/trips/optimize` text flow uses OpenAI when **both** `OPENAI_API_KEY` and `OPENAI_SPEND_AUTHORIZED=true` are configured. Structured forms with no text never call OpenAI. `OPENAI_MODEL` selects the model (default `gpt-6.1-sol`); reasoning effort is low for GPT-5/6, standard service tier, `store:false`, at most 1,800 output tokens including reasoning, no tools and no automatic retries.
+
+OpenAI returns only a strict requirements schema. Non-null critical fields need supporting quotes that occur in the input; cities/dates/budgets are grounded and validated locally. Deterministically parsed event fields take precedence, then explicit form overrides win. The existing planner checks attendance, chronology, budget and ranking. Reoptimization never asks a model to change a locked event.
+
+Optional `TripResponse.interpretation`: `{ mode: "deterministic" | "openai", status: "disabled" | "used" | "fallback", model?, fromCache?, note, usage?: { inputTokens, outputTokens } }`. Disabled, failed and capped interpretation is explicit in this metadata and assumptions; fallback uses the deterministic parser, never synthetic results. Missing fields still become clarification questions. Successful responses may expose token counts, never prompts, raw provider errors or credentials.
+
+Process limits default to **10 attempts/hour and 20 attempts total**, configured with `OPENAI_MAX_CALLS_PER_HOUR` / `OPENAI_MAX_CALLS_TOTAL`. Environment limits can lower, not raise, those ceilings. Per guest: 5 attempts/hour, also IP-limited; failed outbound attempts count. Successful identical text/model/date requests share in-flight calls and a 15-minute cache. A cache hit or local block refunds the guest reservation. These process limits reset on restart and do not enforce a durable dollar budget or provider-account spending limit.
+
+## POST /api/routes/{routeId}/places
+
+Body optional: `{ "route": { "cities": ["Bangkok", "Singapore"] } }`, used only if the route is absent from the in-memory store. Stored route cities are authoritative. At most two distinct catalog cities; no arbitrary coordinates or provider URL is accepted.
+
+Returns `NearbyPlacesResponse`: `{ routeId, source: "geoapify", cities: NearbyCityPlaces[], providerCalls, attribution, note }`. Each city includes `status: "ok" | "not_configured" | "quota" | "unavailable"`, `places`, the catalog city `centre`, `radiusMeters`, original `fetchedAt?`, `fromCache` and `note`. Each place includes `id, name, latitude, longitude, categories, distanceMeters`, optional `address` and sanitized public `website`. Show attribution. These are sights within 5 km of the city centre, **not verified hotel/event-venue proximity**. Fees, hours and availability are unknown; they never change route cost, event lock, feasibility or ranking.
+
+One Geoapify Places request per city, `tourism.sights`, at most 5 results; no geocoding or follow-up calls. Successful city searches share in-flight calls and a 6-hour cache. `GEOAPIFY_MAX_CALLS_PER_HOUR` / `GEOAPIFY_MAX_CALLS_TOTAL` default to 20/hour and 100 total per process; configurable downward only. Per guest: 10 lookups/hour, also IP-limited. Failed attempts count; cache/local-block-only requests are refunded. Without a server key the endpoint returns `503 provider_unavailable`; unsupported fallback cities return `400 invalid_body`; absent route/context returns `404 route_not_found`.
+
+`RouteOption.nearbyPlaces?` reserves an optional additive attachment for frontend integration; this endpoint returns decorative context separately and does not mutate a priced/stored route. `getNearbyPlaces(route)` is in the typed client. Product Lead owns wiring the new nearby-place result into the UI.
+
+`GET /api/session` adds optional `features.aiParsing`, `features.nearbyPlaces` and optional `limits.interpret` / `limits.nearby`. Feature inspection makes no external calls and does not expose keys.

@@ -110,3 +110,15 @@ The locked event cannot change through reoptimization. Restart fallbacks accept 
 Event discovery does not infer a missing year or end date into a plannable hard constraint. Ticketmaster and Eventbrite country conflicts prevent city matching. Concurrent identical event searches share calls. Ticketmaster and Eventbrite attempts each have an hourly process cap of 40; failures count. These in-memory caps reset on restart and supplement, rather than replace, the provider account's actual free-plan allowance. Confirm the account allowance and disable paid overage before real-key tests.
 
 Weather ranges are checked before daily arrays are allocated, and missing forecast values stay unavailable. FX responses must contain one common valid reference date. Budget conversion assumptions survive destination-only reoptimization.
+
+
+## OpenAI and Geoapify (v1.3.0)
+
+- `src/server/providers/openai.ts`: Responses API structured extraction with quoted evidence and local validation. Runtime model comes from `OPENAI_MODEL`; default `gpt-6.1-sol`. The key alone never authorizes spending: `OPENAI_SPEND_AUTHORIZED=true` is separately required after confirming spend or event credits. No SDK installation, tools, automatic retries or model-priced routes.
+- `src/server/interpretation.ts`: attaches interpretation to the existing optimize text flow, with deterministic fallback explicitly labeled. Form overrides remain authoritative; structured forms do not call the model.
+- `src/server/providers/geoapify.ts` and `/api/routes/{routeId}/places`: optional sights around up to two catalog city centres, not venue-specific recommendations. Attribution and unknown fees/hours are explicit.
+- `src/server/providers/limited.ts`: bounded cache, in-flight sharing, hourly and total attempt ceilings. Failures count. Configurable limits are clamped to the safe defaults; process restart clears all limits. Provider dashboard limits/no-paid-overage settings and a single-process demo remain required.
+
+No real-key OpenAI or Geoapify call has been made during this implementation. Tests use synthetic responses and verify grounding, event precedence, form precedence, no-spend gating, failed-attempt accounting, quota refunds, cache sharing and secret-safe output. Main product UI wiring for nearby places remains with Product Lead; the existing text form can use OpenAI through its existing optimize endpoint when authorized/configured.
+
+Primary implementation references: [OpenAI structured outputs](https://developers.openai.com/api/docs/guides/structured-outputs?api-mode=responses), [GPT-6.1 Sol](https://developers.openai.com/api/docs/models/gpt-6.1-sol), [reasoning token limits](https://developers.openai.com/api/docs/guides/reasoning), [Geoapify Places](https://apidocs.geoapify.com/docs/places/). Model/price documentation was checked on 12 October 2026; the application does not estimate API dollar charges from outdated hardcoded prices.

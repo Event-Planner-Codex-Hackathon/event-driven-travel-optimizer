@@ -7,7 +7,7 @@
  */
 import { z } from "zod";
 
-export const CONTRACT_VERSION = "1.2.1";
+export const CONTRACT_VERSION = "1.3.0";
 
 // ---------- Primitive types ----------
 
@@ -258,6 +258,8 @@ export type RouteOption = {
   comparison?: OptionComparison;
   /** Total converted to other currencies for display only (see TripResponse.fx). */
   convertedTotals?: Money[];
+  /** Optional decorative places; never part of feasibility, prices or ranking. */
+  nearbyPlaces?: NearbyCityPlaces[];
 };
 
 export type OptionComparison = {
@@ -314,6 +316,8 @@ export type TripResponse = {
   pricing: PricingSummary;
   /** Reference exchange rates used for convertedTotals (and for a foreign-currency budget, if any). */
   fx?: FxInfo;
+  /** How free text was interpreted; no model-generated route or prices. */
+  interpretation?: InterpretationInfo;
 };
 
 export type PricingSummary = {
@@ -403,9 +407,9 @@ export type ProviderFailure = "not_configured" | "quota" | "auth" | "timeout" | 
 export type SessionResponse = {
   guest: { id: string; isNew: boolean };
   /** livePrices is true for live, record and replay modes; priceMode says which. */
-  features: { livePrices: boolean; banners: boolean; priceMode?: "live" | "record" | "replay" | "off"; eventSearch?: boolean; eventImport?: boolean };
+  features: { livePrices: boolean; banners: boolean; priceMode?: "live" | "record" | "replay" | "off"; eventSearch?: boolean; eventImport?: boolean; aiParsing?: boolean; nearbyPlaces?: boolean };
   limits: Record<"priceCheck" | "quote" | "hero", { remaining: number; max: number; windowMinutes: number }>
-    & Partial<Record<"eventSearch", { remaining: number; max: number; windowMinutes: number }>>;
+    & Partial<Record<"eventSearch" | "interpret" | "nearby", { remaining: number; max: number; windowMinutes: number }>>;
   cities: Array<{ city: string; countryCode: string; iataCode: string }>;
 };
 
@@ -498,3 +502,47 @@ export type EventSearchResponse = {
 };
 
 export type EventImportResponse = { candidate: EventCandidate; sources: EventSourceStatus[] };
+
+
+export type InterpretationInfo = {
+  mode: "deterministic" | "openai";
+  status: "disabled" | "used" | "fallback";
+  model?: string;
+  fromCache?: boolean;
+  note: string;
+  usage?: { inputTokens: number; outputTokens: number };
+};
+
+/** POST /api/routes/{routeId}/places. Fallback contains catalog cities only. */
+export const nearbyPlacesBodySchema = z.object({
+  route: z.object({ cities: z.array(z.string().trim().min(1).max(60)).min(1).max(2) }).strict().optional(),
+}).strict();
+export type NearbyPlace = {
+  id: string;
+  name: string;
+  latitude: number;
+  longitude: number;
+  categories: string[];
+  distanceMeters: number;
+  address?: string;
+  website?: string;
+};
+export type NearbyCityPlaces = {
+  city: string;
+  status: "ok" | "not_configured" | "quota" | "unavailable";
+  places: NearbyPlace[];
+  /** Catalog city centre, not the user's venue/hotel location. */
+  centre: { latitude: number; longitude: number };
+  radiusMeters: number;
+  fetchedAt?: string;
+  fromCache: boolean;
+  note: string;
+};
+export type NearbyPlacesResponse = {
+  routeId: string;
+  source: "geoapify";
+  cities: NearbyCityPlaces[];
+  providerCalls: number;
+  attribution: string;
+  note: string;
+};

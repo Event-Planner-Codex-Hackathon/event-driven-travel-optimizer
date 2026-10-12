@@ -31,3 +31,14 @@ Frontend fixes are intentionally left to Product Lead. No messages were sent to 
 When Onur confirms credentials are ready, first inspect **only `GET /api/session`**, then run one minimal authorized request per real adapter, accounting for quota (SerpApi flights/hotels/events, Ticketmaster, Eventbrite import, one Fal banner). Never inspect `.env.local` contents. The local preview process deliberately has keys/fetches disabled and must be restarted normally for that stage; it has no copied credential file.
 
 Then perform the two demo requests' record/replay rehearsal once, retain original timestamps and replay labels, and review SerpApi terms plus obtain Onur's sharing approval before committing recordings. Observation JSON is Git-ignored. Geoapify remains pending separate approval.
+
+
+## v1.3.0 update
+
+Backend `b1fa4db` adds OpenAI requirement interpretation to the **existing** optimize text endpoint, enabled only by a server key plus `OPENAI_SPEND_AUTHORIZED=true`. Model is configurable (`gpt-6.1-sol` default); standard tier, low reasoning, 1,800 output tokens maximum, no retries/tools, 10/hour and 20 total attempts per process. Structured forms remain deterministic. Failures/disabled mode are explicitly labeled. Deterministically parsed event fields and explicit form fields retain precedence.
+
+Geoapify nearby sights are available through `POST /api/routes/{routeId}/places` and typed `getNearbyPlaces(route)`. Results are around catalog city centres with attribution, unknown fees/hours and original cache timestamps. They never affect event feasibility, ranking or costs. Product Lead still owns displaying this optional response; no product UI files were changed. `GET /api/session` reports the new `aiParsing` / `nearbyPlaces` flags without external calls.
+
+Combined verification: 10 test files, **107 tests passed**; typecheck and production build passed. No real-key OpenAI/Geoapify call has been made. Browser interaction remains unverified due to the earlier denied permission. The refreshed production preview uses an ignored `.env.local` symlink to Onur's existing local credential file; no credential contents were inspected, copied or committed. Previous all-provider-disabled smoke-process overrides are removed on restart. Real adapter validation still begins with session feature inspection when Onur signals that keys are ready.
+
+Session-only runtime inspection after restart: **HTTP 200**, `features.nearbyPlaces=true`, `features.aiParsing=false`; guest allowances `nearby=10/hour`, `interpret=5/hour`. This confirms configuration flags only. No provider request was made by that endpoint. OpenAI needs both a server key and explicit API spending authorization before it can become enabled.
