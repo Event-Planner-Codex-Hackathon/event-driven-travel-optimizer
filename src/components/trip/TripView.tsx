@@ -18,6 +18,7 @@ import { TripPoster } from "./TripPoster";
 import { PriceCheck } from "./PriceCheck";
 import { LocalContext } from "./LocalContext";
 import { NearbySights } from "./NearbySights";
+import { PersonalEvents } from "./PersonalEvents";
 import { pricingLabel } from "./pricingDisplay";
 import { OtherOptions } from "./OtherOptions";
 import { enrichmentOf, syntheticEnrichment } from "./dayPlan";
@@ -190,6 +191,7 @@ function TripReady({ trip, optionParam, preview }: ReadyProps) {
           />
           <TripPoster key={`${featured.id}-${preview}`} option={featured} preview={preview} providerSession={provider.session} onProviderUsed={provider.refresh} />
           <DayPlan option={featured} enrichment={enrichment} />
+          {!preview ? <PersonalEvents key={`events-${featured.id}`} requestId={trip.requestId} option={featured} session={provider.session} onUsed={provider.refresh} /> : null}
           {!preview ? <LocalContext key={featured.id} option={featured} session={provider.session} refresh={provider.refresh} /> : null}
           {!preview ? <NearbySights key={`sights-${featured.id}`} option={featured} session={provider.session} refresh={provider.refresh} /> : null}
           <CostBreakdown trip={trip} option={featured} />

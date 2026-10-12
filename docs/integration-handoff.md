@@ -1,6 +1,26 @@
 # Frontend/backend integration handoff — 12 October 2026
 
-## Current Pookie integration
+## Current live integration — contract 1.4.0
+
+The Product Lead subsequently requested real API results, authorized up to **US$5 OpenAI runtime spend**, and explicitly authorized the minimal server integration here. The final instruction was to wire and push without further testing. Keep the current live preview on port 3002 running; do not replace it with the earlier provider-disabled preview.
+
+- Trip creation now calls optimize and then price-check before opening results when pricing is configured. City replacement also reprices the new response. Costs and route ranking remain backend-authoritative.
+- A real browser search returned **13/13 provider-priced flight/hotel lines**, including cached real observations, with all food/local/contingency allowances explicitly estimated. Observed selected-route total was **61,649 TRY** at 15:32 Istanbul; it is not a guaranteed booking total and ticket fees remain unknown.
+- SerpApi Account API confirmed Active / Free Plan / 248 searches remaining before this live cycle. New metered searches fail closed unless free monthly quota is confirmed and no paid extras are present. Account API is non-metered. Existing cache/replay and rolling caps remain.
+- `POST /api/routes/{routeId}/events` accepts `{ brief, route: { cities: [{ city, arrivalDate, departureDate }], event: { name, city, startDate, endDate } }`. Server-stored routes win over fallback context. It extracts grounded positive interests with OpenAI, searches at most two interest queries per city, and ranks only returned listings using deterministic keyword evidence and date checks. Response: `{ routeId, interests, recommendations, sources, providerCalls, interpretation, notes }`; each recommendation includes its actual `event`, `matchedInterests`, `evidence`, `matchReason`, `timing` and `eventDayConflict`. No event is inserted into the itinerary or budget.
+- The live interest extraction returned jazz, electronic music, house/techno, small gigs, local music nights and art/design. Narrow Google Events searches initially returned no usable matches. The last wiring change adds real Google organic event/discovery pages as a bounded fallback; **that last fallback was not browser-verified at the user's request**. Web pages remain partial/unconfirmed, rather than verified dated ticket offers. No event or ticket price is fabricated.
+- `EventSource` additionally accepts `web`; `EventCandidate` can carry actual `description`, `dateText`, `observedAt`, `fromCache`, and `priceNote`. Ticketmaster price ranges are preserved when supplied; missing prices stay unknown. Google dates without years remain unconfirmed. Cached listings preserve their observation time.
+- Eventbrite now accepts the existing `EVENTBRITE_PRIVATE_TOKEN` alias, fixing the configured-key mismatch without changing or sharing credential values.
+- Runtime model defaults to `gpt-5.4-mini`, checked against official OpenAI docs. `OPENAI_SPEND_AUTHORIZED=true` and `OPENAI_BUDGET_USD=5` enable the authorized local run. Every bounded text attempt reserves US$0.10 in ignored `data/runtime/openai-budget.json`; the model, 48 KB request and 1800 output-token bounds keep this conservative. The file is locked across local processes and retained across restarts; invalid/unavailable ledgers fail closed. Use one shared ledger for concurrent local servers. This is not an account-wide limit across independent hosts.
+- Deterministically parsed optional cities are retained when the AI omits one. No planner, constraint-checker, money arithmetic or route-score code was changed in this cycle.
+
+The current port-3002 process loads the user's ignored credential file by symlink, with live pricing, the verified model, US$5 gate/cap and an absolute ledger path pointing to the primary checkout. It was started with `FAL_MAX_GENERATIONS=0`; fal.ai still has no configured key and no image calls were made. Onur should configure his own ignored environment, not copy credentials into Git.
+
+Earlier checks passed 133 tests and TypeScript before the final fallback/copy changes. No additional test runs or live calls are required by this handoff; the user requested the final push immediately. Onur owns subsequent review and fixes. Vietnam remains outside the catalog and ticket/session availability still needs source confirmation.
+
+References: [OpenAI model/pricing](https://developers.openai.com/api/docs/models/gpt-5.4-mini), [structured outputs](https://developers.openai.com/api/docs/guides/structured-outputs), [free SerpApi Account API](https://serpapi.com/account-api), [Google Events API](https://serpapi.com/google-events-api).
+
+## Earlier Pookie integration checkpoint — 1.3.0
 
 The Product Lead authorized integration of the pushed work at about 14:43 Istanbul time. This cycle combines the latest backend `b1fa4db` through main `9836495` with frontend `e67344c` in an isolated checkout on `codex/pookie-integration`. Contract **1.3.0** is the source of truth. Server code, API handlers, contract schemas and package manifests are unchanged from that backend/main revision. The preceding v1.2.1 integration checkpoint is preserved in `040a025`.
 

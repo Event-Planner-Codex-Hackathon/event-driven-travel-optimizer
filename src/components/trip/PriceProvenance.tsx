@@ -10,7 +10,7 @@ export function PriceProvenance({ source }: { source?: PriceSource }) {
     <span className={styles.provenance}>
       <strong>{priceSourceLabel(source)}</strong>
       <span>SerpApi · {source.product === "google_flights" ? "Google Flights" : "Google Hotels"} · {source.description}</span>
-      <span>Observed <time dateTime={observed}>{new Date(observed).toLocaleString("en-GB")}</time></span>
+      <span>{source.observedAt ? "Observed" : "Retrieved"} <time dateTime={observed}>{new Date(observed).toLocaleString("en-GB")}</time>{!source.observedAt ? " · upstream observation age unspecified" : ""}</span>
       {source.fetchedAt !== observed ? <span>Retrieved <time dateTime={source.fetchedAt}>{new Date(source.fetchedAt).toLocaleString("en-GB")}</time> · original observation time retained</span> : null}
       {source.notes?.map((note) => <span key={note}>{note}</span>)}
       {url ? <a href={url} target="_blank" rel="noreferrer">Public search page ↗</a> : null}

@@ -16,10 +16,12 @@ import { CITIES, KNOWN_EVENTS, findCity, type CityInfo } from "./catalog";
 import { isValidDate } from "./dates";
 import { MONTHS, iso, resolveYear } from "./parser";
 import { takeHourlySerpApiSlot } from "./providers/runtime";
+import { takeFreeSerpSearch } from "./providers/serpQuota";
 
 const TIMEOUT_MS = 8_000;
 const CACHE_TTL_MS = 60 * 60_000;
 const MAX_RESULTS = 10;
+export const eventbriteToken = () => process.env.EVENTBRITE_TOKEN || process.env.EVENTBRITE_PRIVATE_TOKEN;
 
 type Fetcher = typeof fetch;
 type Json = Record<string, unknown>;
@@ -164,6 +166,10 @@ export function parseGoogleEvents(json: Json, today: string): EventCandidate[] {
         catalogCity: city?.city,
         countryCode: city?.countryCode,
         venue,
+        description: str(e.description)?.slice(0, 1200),
+        dateText: str(record(e.date)?.when) ?? str(record(e.date)?.start_date),
+        observedAt: (() => { const time = Date.parse(str(record(json.search_metadata)?.created_at) ?? ""); return Number.isFinite(time) ? new Date(time).toISOString() : undefined; })(),
+        fromCache: false,
         startDate,
         endDate,
         sourceUrl: link && /^https:\/\//.test(link) ? link : undefined,
@@ -175,6 +181,7 @@ export function parseGoogleEvents(json: Json, today: string): EventCandidate[] {
 
 async function searchGoogleEvents(q: string, city: string | undefined, apiKey: string, today: string, fetcher: Fetcher): Promise<SourceResult> {
   if (!takeHourlySerpApiSlot()) return { status: { source: "google_events", status: "quota", message: "Hourly SerpApi limit reached." }, results: [], metered: 0 };
+  if (!await takeFreeSerpSearch(apiKey, fetcher)) return { status: { source: "google_events", status: "quota", message: "Free search quota could not be confirmed." }, results: [], metered: 0 };
   const url = new URL("https://serpapi.com/search.json");
   url.search = new URLSearchParams({ engine: "google_events", q: city ? `${q} ${city}` : q, hl: "en", api_key: apiKey }).toString();
   try {
@@ -182,7 +189,7 @@ async function searchGoogleEvents(q: string, city: string | undefined, apiKey: s
     const json = (await res.json().catch(() => ({}))) as Json;
     if (res.status === 401 || res.status === 403) return { status: { source: "google_events", status: "error", message: "Event search key was rejected." }, results: [], metered: 1 };
     if (res.status === 429) return { status: { source: "google_events", status: "quota", message: "Event search quota reached." }, results: [], metered: 1 };
-    if (typeof json.error === "string" && /no results/i.test(json.error)) return { status: { source: "google_events", status: "empty" }, results: [], metered: 1 };
+    if (typeof json.error === "string" && /no results|hasn't returned any results/i.test(json.error)) return { status: { source: "google_events", status: "empty" }, results: [], metered: 1 };
     if (!res.ok || json.error) return { status: { source: "google_events", status: "error", message: "Event search failed." }, results: [], metered: 1 };
     const results = parseGoogleEvents(json, today);
     return { status: { source: "google_events", status: results.length ? "ok" : "empty" }, results, metered: 1 };
@@ -217,6 +224,9 @@ export function parseTicketmaster(json: Json): EventCandidate[] {
         catalogCity: city?.city,
         countryCode: country ?? city?.countryCode,
         venue: str(venue?.name),
+        description: str(e.info)?.slice(0, 1200),
+        observedAt: new Date().toISOString(),
+        priceNote: (() => { const range = records(e.priceRanges)[0]; const currency = str(range?.currency); const min = range?.min; const max = range?.max; return currency && typeof min === "number" && Number.isFinite(min) ? `${min}${typeof max === "number" && Number.isFinite(max) && max !== min ? `–${max}` : ""} ${currency} listed range; fees and availability need confirmation` : undefined; })(),
         startDate: startDate && isValidDate(startDate) ? startDate : undefined,
         endDate: endDate && isValidDate(endDate) ? endDate : undefined,
         sourceUrl: url && /^https:\/\//.test(url) ? url : undefined,
@@ -248,9 +258,9 @@ export type EventSearchDeps = { serpApiKey?: string; ticketmasterKey?: string; t
 
 async function cached(key: string, now: number, run: () => Promise<SourceResult>): Promise<SourceResult> {
   const hit = cache.get(key);
-  if (hit && hit.expires > now) return { ...hit.value, metered: 0 };
+  if (hit && hit.expires > now) return { ...hit.value, results: hit.value.results.map((event: EventCandidate) => ({ ...event, fromCache: true })), metered: 0 };
   const pending = inFlight.get(key);
-  if (pending) return { ...await pending, metered: 0 };
+  if (pending) { const value = await pending; return { ...value, results: value.results.map((event) => ({ ...event, fromCache: true })), metered: 0 }; }
   const job = run().then((value) => {
     if (value.status.status === "ok" || value.status.status === "empty") cache.set(key, { expires: now + CACHE_TTL_MS, value });
     return value;
@@ -287,6 +297,27 @@ export async function searchEvents(q: string, city: string | undefined, deps: Ev
     sources: [{ source: "catalog", status: catalog.length ? "ok" : "empty" }, google.status, tm.status],
     meteredCalls: google.metered + tm.metered,
   };
+}
+
+/** Real public discovery pages, used when a narrow Google Events query has no listings. */
+export async function searchEventPages(q: string, city: string, apiKey: string, fetcher: Fetcher = fetch): Promise<SourceResult> {
+  if (!takeHourlySerpApiSlot() || !await takeFreeSerpSearch(apiKey, fetcher)) return { status: { source: "web", status: "quota" }, results: [], metered: 0 };
+  try {
+    const url = new URL("https://serpapi.com/search.json");
+    url.search = new URLSearchParams({ engine: "google", q: `${q} ${city}`, hl: "en", num: "8", api_key: apiKey }).toString();
+    const res = await fetcher(url, { signal: AbortSignal.timeout(10_000), cache: "no-store" });
+    const data = await res.json();
+    if (!res.ok || data.error) return { status: { source: "web", status: "error" }, results: [], metered: 1 };
+    const timestamp = Date.parse(str(record(data.search_metadata)?.created_at) ?? "");
+    const results = records(data.organic_results).flatMap((item) => {
+      const name = str(item.title), link = str(item.link), description = str(item.snippet);
+      if (!name || !link || !/^https:\/\//.test(link)) return [];
+      const matched = matchCatalogCity([name, description, link]);
+      if (matched?.city !== city) return [];
+      return [finishCandidate({ id: `web:${link}`, source: "web", name, description, city, catalogCity: city, sourceUrl: link, dateConfidence: "partial", observedAt: Number.isFinite(timestamp) ? new Date(timestamp).toISOString() : undefined, warnings: ["Public event/discovery page, not a verified dated ticket offer. Confirm individual events, dates and fees on the source page."] })];
+    });
+    return { status: { source: "web", status: results.length ? "ok" : "empty" }, results, metered: 1 };
+  } catch { return { status: { source: "web", status: "error" }, results: [], metered: 1 }; }
 }
 
 // ---------- Eventbrite import ----------

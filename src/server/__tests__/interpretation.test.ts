@@ -8,6 +8,9 @@ import { consume, remaining, resetGuestState } from "../guest";
 import { aiParsingEnabled, extractionToParsed, interpretText } from "../providers/openai";
 import { resetLimitedState } from "../providers/limited";
 import { optimizeTrip } from "../trips";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 vi.mock("../providers/fx", async (importOriginal) => ({ ...await importOriginal<typeof import("../providers/fx")>(), getFxRates: vi.fn(async () => null) }));
 
@@ -19,9 +22,10 @@ const empty = () => ({
   optionalCities: [], preferences: { lodgingStyle: null, preferredPace: null, maxStops: null },
 });
 const response = (parsed: unknown, extra: Record<string, unknown> = {}) => new Response(JSON.stringify({ status: "completed", output: [{ type: "message", content: [{ type: "output_text", text: JSON.stringify(parsed) }] }], usage: { input_tokens: 300, output_tokens: 200 }, ...extra }));
-const enable = () => { vi.stubEnv("OPENAI_API_KEY", "unit-test-placeholder"); vi.stubEnv("OPENAI_SPEND_AUTHORIZED", "true"); vi.stubEnv("OPENAI_MODEL", "gpt-6.1-sol"); };
-beforeEach(() => { resetLimitedState(); resetGuestState(); vi.stubEnv("OPENAI_API_KEY", ""); vi.stubEnv("OPENAI_SPEND_AUTHORIZED", "false"); });
-afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); });
+let budgetDir: string;
+const enable = () => { vi.stubEnv("OPENAI_API_KEY", "unit-test-placeholder"); vi.stubEnv("OPENAI_SPEND_AUTHORIZED", "true"); vi.stubEnv("OPENAI_MODEL", "gpt-5.4-mini"); };
+beforeEach(async () => { resetLimitedState(); resetGuestState(); vi.stubEnv("OPENAI_API_KEY", ""); vi.stubEnv("OPENAI_SPEND_AUTHORIZED", "false"); budgetDir = await mkdtemp(join(tmpdir(), "pookie-ai-unit-")); vi.stubEnv("OPENAI_BUDGET_FILE", join(budgetDir, "budget.json")); vi.stubEnv("OPENAI_BUDGET_USD", "5"); });
+afterEach(async () => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); await rm(budgetDir, { recursive: true, force: true }); });
 
 describe("OpenAI requirements boundary (synthetic responses only)", () => {
   it("makes no call without explicit API spending authorization", async () => {
@@ -40,13 +44,13 @@ describe("OpenAI requirements boundary (synthetic responses only)", () => {
     enable();
     const fetcher = vi.fn(async (_url: unknown, init?: RequestInit) => {
       const body = JSON.parse(String(init?.body));
-      expect(body).toMatchObject({ model: "gpt-6.1-sol", store: false, service_tier: "default", reasoning: { effort: "low" }, max_output_tokens: 1800, text: { format: { type: "json_schema", strict: true } } });
+      expect(body).toMatchObject({ model: "gpt-5.4-mini", store: false, service_tier: "default", reasoning: { effort: "low" }, max_output_tokens: 1800, text: { format: { type: "json_schema", strict: true } } });
       expect(body).not.toHaveProperty("tools");
       expect(String(init?.body)).not.toContain("unit-test-placeholder");
       return response(empty());
     }) as typeof fetch;
     const r = await interpretText(DEMO_REQUESTS[0].text, TODAY, fetcher);
-    expect(r).toMatchObject({ ok: true, model: "gpt-6.1-sol", spentProviderCall: true, usage: { inputTokens: 300, outputTokens: 200 } });
+    expect(r).toMatchObject({ ok: true, model: "gpt-5.4-mini", spentProviderCall: true, usage: { inputTokens: 300, outputTokens: 200 } });
   });
 
   it("rejects ungrounded fields and never lets model output change already parsed event dates/city", () => {
@@ -140,7 +144,7 @@ it("wires the existing optimize HTTP endpoint to the configured interpreter", as
   const res = await optimizeRoute(new Request("http://localhost/api/trips/optimize", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: DEMO_REQUESTS[0].text }) }));
   expect(res.status).toBe(200);
   const trip = await res.json();
-  expect(trip).toMatchObject({ contractVersion: "1.3.0", status: "ready", interpretation: { mode: "openai", model: "gpt-6.1-sol" } });
+  expect(trip).toMatchObject({ contractVersion: "1.4.0", status: "ready", interpretation: { mode: "openai", model: "gpt-5.4-mini" } });
   expect(trip.normalizedRequest.optionalCities.map((c: { city: string }) => c.city)).toEqual(["Bangkok", "Taipei"]);
 });
 

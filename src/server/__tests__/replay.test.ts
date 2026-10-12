@@ -1,7 +1,8 @@
 import { mkdtemp, readdir, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+vi.mock("../providers/serpQuota", () => ({ takeFreeSerpSearch: async () => true }));
 import { DEMO_REQUESTS } from "@/contract/demo";
 import { addDays } from "../dates";
 import { money } from "../money";

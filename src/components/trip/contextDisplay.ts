@@ -1,6 +1,6 @@
 import type { EventCandidate, RouteOption } from "@/contract/trip";
 
-export const EVENT_SOURCE_NAMES = { catalog: "Curated catalog", google_events: "Google Events", ticketmaster: "Ticketmaster", eventbrite: "Eventbrite" } as const;
+export const EVENT_SOURCE_NAMES = { catalog: "Curated catalog", google_events: "Google Events", ticketmaster: "Ticketmaster", eventbrite: "Eventbrite", web: "Web search" } as const;
 export const EVENT_STATUS_NAMES = { ok: "Available", empty: "No results", not_configured: "Not configured", quota: "Limit reached", error: "Unavailable" } as const;
 
 export function cityVisit(option: RouteOption, city: string) {

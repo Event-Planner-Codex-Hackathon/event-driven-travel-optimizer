@@ -418,7 +418,7 @@ function StandardForm({ labelledBy, busy, onStart }: FormProps) {
         <div className={`${styles.field} ${styles.wide}`}>
           <label className={styles.label} htmlFor={fieldId("interests")}>Music, events and things you enjoy (optional)</label>
           <textarea id={fieldId("interests")} className={`${styles.input} ${styles.textarea}`} rows={3} maxLength={500} value={interests} onChange={(e) => setInterests(e.target.value)} placeholder="Live jazz, house music, street food, night markets, architecture…" aria-describedby={fieldId("interests-note")} />
-          <p className={styles.hint} id={fieldId("interests-note")}>Keep your interests with the trip. Personalized event matching is awaiting integration.</p>
+          <p className={styles.hint} id={fieldId("interests-note")}>We'll use these interests to search real event listings on your route when the providers are available.</p>
         </div>
       </div>
 

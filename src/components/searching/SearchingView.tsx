@@ -8,12 +8,13 @@ import type { BoardRow } from "@/components/landing/board/splitFlapEngine";
 import { ArrowRight } from "@/components/landing/Icons";
 import { SiteShell, usePrefersReducedMotion } from "@/components/site/SiteShell";
 import site from "@/components/site/site.module.css";
-import { ApiRequestError, optimizeTrip } from "@/contract/client";
+import { ApiRequestError, getSession, optimizeTrip, priceCheckTrip } from "@/contract/client";
 import type { OptimizeBody } from "@/contract/trip";
 import { useHydrated } from "@/lib/browserStore";
 import { formatDay, formatMoney, formatRange } from "@/lib/format";
 import { clearPendingSearch, saveTripResponse, takePendingSearch, type PendingSearch } from "@/lib/trips";
 import { saveTripBrief } from "@/lib/tripBrief";
+import { assertTripUpdate } from "../trip/pricingDisplay";
 import styles from "./searching.module.css";
 
 // One board row per thing the planner really does. Nothing here is a live search.
@@ -22,8 +23,8 @@ type Step = { wide: string; narrow: string; active: string; done: string; say: s
 const STEPS: readonly Step[] = [
   { wide: "YOUR TRIP", narrow: "TRIP", active: "CHECKING", done: "CHECKED", say: "Checking your trip details" },
   { wide: "EVENT DAYS", narrow: "EVENT", active: "PROTECTING", done: "PROTECTED", say: "Keeping the event days fixed" },
-  { wide: "FLIGHTS", narrow: "FLIGHTS", active: "ESTIMATING", done: "ESTIMATED", say: "Estimating flight costs" },
-  { wide: "HOTEL NIGHTS", narrow: "HOTELS", active: "ESTIMATING", done: "ESTIMATED", say: "Estimating hotel nights" },
+  { wide: "FLIGHTS", narrow: "FLIGHTS", active: "SEARCHING", done: "CHECKED", say: "Checking flight prices with the configured provider" },
+  { wide: "HOTEL NIGHTS", narrow: "HOTELS", active: "SEARCHING", done: "CHECKED", say: "Checking hotel prices with the configured provider" },
   { wide: "3 ROUTES", narrow: "ROUTES", active: "RANKING", done: "RANKED", say: "Ranking three routes" },
 ];
 
@@ -247,10 +248,17 @@ function Searching() {
       const holdUntil = (ms: number) => sleep(Math.max(0, ms - (Date.now() - startedAt)), signal);
 
       try {
-        const response = await optimizeTrip(search.body, signal);
+        let response = await optimizeTrip(search.body, signal);
         if (signal.aborted) return;
 
         if (response.status === "ready") {
+          const provider = await getSession(signal);
+          if (provider.features.livePrices && provider.limits.priceCheck.remaining > 0) {
+            const priced = await priceCheckTrip(response.requestId, response.normalizedRequest, signal, response.requirementsVersion);
+            if (signal.aborted) return;
+            assertTripUpdate(response, priced);
+            response = priced;
+          }
           saveTripResponse(response);
           saveTripBrief(response.requestId, search.brief ?? { description: search.body.text ?? "" });
           const href = `/trips/${encodeURIComponent(response.requestId)}`;
@@ -437,8 +445,8 @@ function Searching() {
       <div className={styles.caption}>
         <h1 {...headingProps}>Comparing routes around your event</h1>
         <p className={site.pageIntro}>
-          Pookie is checking your dates, keeping the event days fixed and estimating flights and hotel nights
-          for each route. Every price is an estimate, not a live fare.
+          Pookie is checking your dates, keeping the event days fixed and searching flight and hotel prices
+          with the configured provider. Missing prices and estimated allowances stay clearly labelled.
         </p>
         <ul className={styles.legend} aria-label="Lamp key">
           <li>

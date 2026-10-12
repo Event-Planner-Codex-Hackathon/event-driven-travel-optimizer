@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState, useTransition } from "react";
-import { ApiRequestError, reoptimizeTrip } from "@/contract/client";
+import { ApiRequestError, priceCheckTrip, reoptimizeTrip } from "@/contract/client";
 import type { NormalizedRequest, RouteOption, SessionResponse, TripResponse } from "@/contract/trip";
 import { carryTripBrief } from "@/lib/tripBrief";
 import { saveTripResponse } from "@/lib/trips";
@@ -61,7 +61,7 @@ export function ChangeStop({ trip, request, featured, session, locked = false, o
     setError(null);
 
     try {
-      const next = await reoptimizeTrip(
+      let next = await reoptimizeTrip(
         trip.requestId,
         { optionalCities: stop === NONE ? [] : [{ city: stop }] },
         request,
@@ -71,6 +71,12 @@ export function ChangeStop({ trip, request, featured, session, locked = false, o
       if (controller.signal.aborted) return;
       assertTripUpdate(trip, next);
       if (next.requirementsVersion <= versionRef.current) return;
+      if (session?.features.livePrices && session.limits.priceCheck.remaining > 0) {
+        const priced = await priceCheckTrip(next.requestId, next.normalizedRequest, controller.signal, next.requirementsVersion);
+        if (controller.signal.aborted) return;
+        assertTripUpdate(next, priced);
+        next = priced;
+      }
       versionRef.current = next.requirementsVersion;
       saveTripResponse(next);
       carryTripBrief(trip.requestId, next.requestId);
