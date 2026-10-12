@@ -4,7 +4,7 @@ This repository contains preparation documents for October 12, 2026. No applicat
 
 ## Read in this order
 
-First read the [team roles and coordination rules](AGENTS.md#team-roles-and-development-coordination). The implementation prompt is scoped to the Product Lead's frontend session; Onur will add his own role instructions before backend work.
+First read the [team roles and coordination rules](AGENTS.md#team-roles-and-development-coordination). The implementation prompt is scoped to the Product Lead's frontend session; use the Backend & AI Engineering Lead ownership in AGENTS.md for backend work and coordinate the shared API contract before integration.
 
 1. [Credential setup](CREDENTIAL-SETUP.md): the short account checklist to complete later; keys never belong in these documents.
 2. [Tooling readiness](TOOLING-READINESS.md): verified local tools, authentication results, and remaining checks.

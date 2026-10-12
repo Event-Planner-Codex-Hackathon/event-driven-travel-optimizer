@@ -19,7 +19,7 @@ The planned product compares trips around a fixed event, combining flights, acco
 
 ## Collaboration
 
-M4G1W0W and OnurSamett are organization Owners. Development ownership is separate from GitHub permissions: M4G1W0W is the Product Lead and owns the frontend, user experience, and pitch; Onur will add his role instructions to [AGENTS.md](AGENTS.md#team-roles-and-development-coordination).
+M4G1W0W and OnurSamett are organization Owners. Development ownership is separate from GitHub permissions: M4G1W0W is the Product Lead and owns product direction, frontend, user experience, and pitch; OnurSamett is the Backend & AI Engineering Lead and owns backend architecture, request interpretation, deterministic route planning, and server-side integrations. See [AGENTS.md](AGENTS.md#team-roles-and-development-coordination) for detailed boundaries.
 
 Read those coordination rules before editing. Agree the API contract and ownership of shared setup files, work on separate branches/checkouts, and integrate in small increments. During the authorized build, the frontend can use explicitly labeled synthetic mock API responses until backend endpoints are ready. Mock UI checks do not verify live provider integration. There are no application install or run commands yet.
 

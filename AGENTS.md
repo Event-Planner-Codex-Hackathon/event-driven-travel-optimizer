@@ -26,7 +26,17 @@ Product name: **EventHopper**. These role instructions govern the authorized bui
 
 ### Teammate — OnurSamett
 
-The Product Lead will integrate with Onur's backend through an agreed API contract. Onur will add his own role and development instructions here; do not invent his detailed responsibilities or overwrite his instructions. Equal GitHub Owner access does not override development ownership.
+**Role: Backend & AI Engineering Lead.** Onur owns backend architecture and implementation, natural-language request interpretation, deterministic route planning, server-side integrations, and technical integration readiness. This technical lead role covers engineering decisions and backend delivery; product direction, user experience, frontend, and pitch remain with the Product Lead.
+
+- Own backend services and API behavior for parsing and validating trip requests, generating up to three route alternatives, calculating authoritative totals and feasibility, and fully reoptimizing when requirements change.
+- Treat event city and inclusive event dates as hard constraints. Keep chronology, travel-window limits, and the agreed v1 scope enforced by deterministic backend logic; never let a language model override them.
+- Use AI to interpret natural language into the agreed validated request schema and to explain computed results. Keep route feasibility, dates, money, ranking, and authoritative calculations deterministic and grounded in backend outputs.
+- Own backend-side estimate provenance, assumptions, unknown-cost handling, and explicit synthetic/demo data labeling. Never present mock or heuristic prices as live offers.
+- Own server-side provider adapters and secret handling. Keep credentials out of frontend code and Git. Add optional Fal.ai hero generation only after the core planning flow works and within the project's funding rules; it must not affect route feasibility or ranking.
+- Coordinate API schemas, shared setup, and integration checkpoints with the Product Lead before changing shared contracts or files. Backend ownership does not include frontend UX or presentation materials.
+- Keep the implementation small, replaceable, and reviewable. Report changed files, contract version, verification performed, provenance limitations, and blockers at handoff. Record completed contributions accurately rather than treating role ownership as completed work.
+
+Equal GitHub Owner access does not override development ownership.
 
 ### Shared API contract and mock responses
 
