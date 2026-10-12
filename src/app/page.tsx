@@ -8,7 +8,8 @@ export default function Home() {
       <p>Plan a trip around an event whose dates cannot move.</p>
       <p>
         The product UI is in progress. The backend can be exercised from the{" "}
-        <Link href="/dev">developer console</Link>.
+        <Link href="/dev">developer console</Link>. Guests can also{" "}
+        <Link href="/prices">look up a single flight or hotel price</Link>.
       </p>
     </main>
   );

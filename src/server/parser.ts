@@ -131,7 +131,8 @@ function findBudget(text: string, issues: string[]): ParsedRequest["budget"] {
   const m = tryRe.exec(text);
   if (m) {
     const amount = m[1] ? parseAmount(m[1], m[2]) : parseAmount(m[3], m[4]);
-    if (Number.isFinite(amount) && amount > 0) return { amountMinor: Math.round(amount * 100), currency: "TRY" };
+    const amountMinor = Math.round(amount * 100);
+    if (Number.isSafeInteger(amountMinor) && amountMinor > 0) return { amountMinor, currency: "TRY" };
   }
   const foreign = new RegExp(`(?:[$€£]\\s*${num})|(?:${num}\\s*(?:usd|eur|gbp|dollars?|euros?)\\b)`, "iu").exec(text);
   if (foreign) {

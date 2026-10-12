@@ -8,8 +8,11 @@ import type {
   HeroResponse,
   NormalizedRequest,
   OptimizeBody,
+  QuoteBody,
+  QuoteResponse,
   RequestOverrides,
   RouteOption,
+  SessionResponse,
   TripResponse,
 } from "./trip";
 
@@ -67,3 +70,23 @@ export const requestHero = (route: RouteOption, signal?: AbortSignal) =>
     },
     signal,
   );
+
+/** Prices the current three options with live provider data; returns a new requirements version. */
+export const priceCheckTrip = (requestId: string, baseRequest?: NormalizedRequest | null, signal?: AbortSignal) =>
+  post<TripResponse>(`/api/trips/${encodeURIComponent(requestId)}/price-check`, baseRequest ? { baseRequest } : {}, signal);
+
+/** Guest price lookup for one flight or one hotel stay. */
+export const quotePrice = (body: QuoteBody, signal?: AbortSignal) => post<QuoteResponse>("/api/prices/quote", body, signal);
+
+/** Starts/reads the anonymous guest session and returns feature flags, limits and supported cities. */
+export async function getSession(signal?: AbortSignal): Promise<SessionResponse> {
+  let res: Response;
+  try {
+    res = await fetch("/api/session", { signal, cache: "no-store" });
+  } catch (err) {
+    if ((err as Error).name === "AbortError") throw err;
+    throw new ApiRequestError(0, "network", "Could not reach the server.");
+  }
+  if (!res.ok) throw new ApiRequestError(res.status, "internal", `Request failed (${res.status}).`);
+  return (await res.json()) as SessionResponse;
+}

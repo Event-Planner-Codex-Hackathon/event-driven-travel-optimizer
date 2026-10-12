@@ -6,15 +6,16 @@ import { randomUUID } from "node:crypto";
 import {
   CONTRACT_VERSION,
   type NormalizedRequest,
+  type PricingSummary,
   type RequestOverrides,
   type RouteOption,
   type TripResponse,
 } from "@/contract/trip";
 import { CITIES, PLANNING_RULES, findCity } from "./catalog";
-import { addDays, formatShort, isValidDate } from "./dates";
+import { addDays, formatShort, isValidDate, todayLocal } from "./dates";
 import { formatMoney } from "./money";
 import { parseRequestText, type ParsedRequest } from "./parser";
-import { explain, plan } from "./planner";
+import { compareCandidates, explain, plan, type Candidate } from "./planner";
 import { getTrip, saveTrip } from "./store";
 
 const SUPPORTED = CITIES.map((c) => c.city).join(", ");
@@ -76,6 +77,8 @@ function finalize(d: Draft, issues: string[], assumptions: string[]): { request:
   else if (!isValidDate(d.event.startDate) || !isValidDate(d.event.endDate) || d.event.endDate < d.event.startDate)
     questions.push("The event dates look invalid. What are the first and last event days?");
   if (!d.budget && !issues.some((i) => i.includes("TRY"))) questions.push("What is your total budget in TRY?");
+  else if (d.budget && (d.budget.currency !== "TRY" || !Number.isSafeInteger(d.budget.amountMinor) || d.budget.amountMinor <= 0))
+    questions.push("This demo accepts positive budgets in TRY only. What is your total budget in TRY?");
   if (origin && eventCity && origin.city === eventCity.city) questions.push("The event is in your departure city. Where are you travelling from?");
 
   const optional: string[] = [];
@@ -120,9 +123,15 @@ function finalize(d: Draft, issues: string[], assumptions: string[]): { request:
   };
 }
 
-function globalAssumptions(req: NormalizedRequest): string[] {
+const PRICING_ASSUMPTION: Record<PricingSummary["mode"], string> = {
+  estimates: "Demo estimates: all prices are heuristic or mock planning figures in TRY — not live fares, hotel inventory or bookable quotes.",
+  mixed: "Mixed pricing: lines marked provider are search results from Google Flights / Google Hotels; all other lines are heuristic or mock estimates. Not bookable quotes.",
+  provider: "Flights and stays are search results from Google Flights / Google Hotels; food, local transport and contingency are estimates. Not bookable quotes.",
+};
+
+function globalAssumptions(req: NormalizedRequest, mode: PricingSummary["mode"] = "estimates"): string[] {
   return [
-    "Demo estimates: all prices are heuristic or mock planning figures in TRY — not live fares, hotel inventory or bookable quotes.",
+    PRICING_ASSUMPTION[mode],
     "1 adult, economy class, 1 room.",
     `Event lock: arrive in ${req.event.city} by ${formatShort(addDays(req.event.startDate, -PLANNING_RULES.arrivalBufferDays))} and leave no earlier than ${formatShort(addDays(req.event.endDate, PLANNING_RULES.departureBufferDays))}.`,
     "Flights over ~5,000 km are modeled as overnight (arrive the next local day).",
@@ -130,30 +139,87 @@ function globalAssumptions(req: NormalizedRequest): string[] {
   ];
 }
 
-function buildResponse(
-  request: NormalizedRequest | null,
-  questions: string[],
-  assumptions: string[],
-  meta: { requirementsVersion: number; previousRequestId?: string },
-): TripResponse {
+const ESTIMATES_ONLY: PricingSummary = {
+  mode: "estimates",
+  providerCalls: 0,
+  cacheHits: 0,
+  notes: ["All prices are planning estimates. Use a live price check to compare against provider prices."],
+};
+
+type ResponseMeta = { requirementsVersion: number; previousRequestId?: string };
+
+function responseBase(meta: ResponseMeta) {
   const requestId = `trp_${randomUUID().slice(0, 12)}`;
-  const base = {
+  return {
     requestId,
     generatedAt: new Date().toISOString(),
     contractVersion: CONTRACT_VERSION,
     requirementsVersion: meta.requirementsVersion,
     ...(meta.previousRequestId ? { previousRequestId: meta.previousRequestId } : {}),
   };
+}
 
+/** Assumptions specific to this request (parser notes, defaults), without global or budget-status lines. */
+export function requestAssumptions(trip: TripResponse): string[] {
+  if (!trip.normalizedRequest) return [];
+  const global = new Set([...Object.values(PRICING_ASSUMPTION), ...globalAssumptions(trip.normalizedRequest)]);
+  return trip.assumptions.filter((a) => !global.has(a) && !a.startsWith("No option fits"));
+}
+
+/** Rank candidates, label A/B/C, explain, and wrap them in a ready TripResponse. */
+export function assembleReadyResponse(
+  request: NormalizedRequest,
+  candidates: Candidate[],
+  assumptions: string[],
+  meta: ResponseMeta,
+  pricing: PricingSummary,
+): TripResponse {
+  const base = responseBase(meta);
+  const ranked = [...candidates].sort(compareCandidates);
+  const labels = ["A", "B", "C"] as const;
+  const best = ranked[0];
+  const options: RouteOption[] = ranked.map((c, i) => {
+    const { summary, highlights } = explain(c, best, request);
+    const { family: _f, spec: _s, travelMinutes: _t, ...rest } = c;
+    return { ...rest, id: `${base.requestId}-${labels[i]}`, label: labels[i], summary, highlights };
+  });
+  const recommended = options.find((o) => o.feasibility.feasible);
+
+  const allAssumptions = Array.from(new Set([...globalAssumptions(request, pricing.mode), ...assumptions]));
+  if (!recommended) {
+    const cheapest = [...options].sort((a, b) => a.costBreakdown.total.amountMinor - b.costBreakdown.total.amountMinor)[0];
+    allAssumptions.push(
+      `No option fits the ${formatMoney(request.budget)} budget; the cheapest keeps the event and costs ${formatMoney(cheapest.costBreakdown.total)}.`,
+    );
+  }
+
+  return {
+    ...base,
+    status: "ready",
+    normalizedRequest: request,
+    clarificationQuestions: [],
+    assumptions: allAssumptions,
+    options,
+    recommendedOptionId: recommended?.id ?? null,
+    pricing,
+  };
+}
+
+function buildResponse(
+  request: NormalizedRequest | null,
+  questions: string[],
+  assumptions: string[],
+  meta: ResponseMeta,
+): TripResponse {
   if (!request) {
-    return { ...base, status: "needs_input", normalizedRequest: null, clarificationQuestions: questions, assumptions, options: [], recommendedOptionId: null };
+    return { ...responseBase(meta), status: "needs_input", normalizedRequest: null, clarificationQuestions: questions, assumptions, options: [], recommendedOptionId: null, pricing: ESTIMATES_ONLY };
   }
 
   const { chosen, blockingReasons } = plan(request);
   if (chosen.length < 3) {
     const why = blockingReasons.length ? ` ${blockingReasons.join(" ")}` : "";
     return {
-      ...base,
+      ...responseBase(meta),
       status: "needs_input",
       normalizedRequest: request,
       clarificationQuestions: [
@@ -162,39 +228,13 @@ function buildResponse(
       assumptions: [...globalAssumptions(request), ...assumptions],
       options: [],
       recommendedOptionId: null,
+      pricing: ESTIMATES_ONLY,
     };
   }
-
-  const labels = ["A", "B", "C"] as const;
-  const best = chosen[0];
-  const options: RouteOption[] = chosen.map((c, i) => {
-    const { summary, highlights } = explain(c, best, request);
-    const { family: _f, spec: _s, travelMinutes: _t, ...rest } = c;
-    return { ...rest, id: `${requestId}-${labels[i]}`, label: labels[i], summary, highlights };
-  });
-  const recommended = options.find((o) => o.feasibility.feasible);
-
-  const allAssumptions = [...globalAssumptions(request), ...assumptions];
-  if (!recommended) {
-    const cheapest = [...options].sort((a, b) => a.costBreakdown.total.amountMinor - b.costBreakdown.total.amountMinor)[0];
-    allAssumptions.push(
-      `No option fits the ${formatMoney(request.budget)} budget; the cheapest keeps the event and costs ${formatMoney(cheapest.costBreakdown.total)}.`,
-    );
-  }
-
-  const response: TripResponse = {
-    ...base,
-    status: "ready",
-    normalizedRequest: request,
-    clarificationQuestions: [],
-    assumptions: allAssumptions,
-    options,
-    recommendedOptionId: recommended?.id ?? null,
-  };
-  return response;
+  return assembleReadyResponse(request, chosen, assumptions, meta, ESTIMATES_ONLY);
 }
 
-export function optimizeTrip(input: { text?: string; overrides?: RequestOverrides }, today: string = new Date().toISOString().slice(0, 10)): TripResponse {
+export function optimizeTrip(input: { text?: string; overrides?: RequestOverrides }, today: string = todayLocal()): TripResponse {
   const parsed = input.text?.trim()
     ? parseRequestText(input.text, today)
     : { optionalCities: [], preferences: {}, assumptions: [], issues: [], event: {} } as ParsedRequest;

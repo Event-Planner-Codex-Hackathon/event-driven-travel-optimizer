@@ -1,22 +1,18 @@
 import { NextResponse } from "next/server";
-import { reoptimizeBodySchema, type NormalizedRequest, type TripResponse } from "@/contract/trip";
-import { apiError, readJson } from "@/server/http";
+import { reoptimizeBodySchema, type TripResponse } from "@/contract/trip";
+import { apiError, readBodyOr413 } from "@/server/http";
 import { reoptimizeTrip } from "@/server/trips";
 
 export const runtime = "nodejs";
 
-function looksLikeRequest(v: unknown): v is NormalizedRequest {
-  const r = v as NormalizedRequest | undefined;
-  return !!r && typeof r.origin?.city === "string" && typeof r.event?.city === "string" && typeof r.budget?.amountMinor === "number";
-}
-
 export async function POST(req: Request, { params }: { params: Promise<{ requestId: string }> }) {
   const { requestId } = await params;
-  const parsed = reoptimizeBodySchema.safeParse(await readJson(req));
+  const body = await readBodyOr413(req);
+  if (!body.ok) return body.response;
+  const parsed = reoptimizeBodySchema.safeParse(body.body);
   if (!parsed.success) return apiError(400, "invalid_body", "Invalid request body.", parsed.error.issues);
-  const base = looksLikeRequest(parsed.data.baseRequest) ? parsed.data.baseRequest : undefined;
   try {
-    const result = reoptimizeTrip(requestId, parsed.data.changes, base);
+    const result = reoptimizeTrip(requestId, parsed.data.changes, parsed.data.baseRequest);
     if (!result.ok) return apiError(404, result.code, result.message);
     return NextResponse.json<TripResponse>(result.response);
   } catch (err) {

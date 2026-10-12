@@ -3,7 +3,7 @@
 // Not the product UI — the frontend track builds that against src/contract.
 
 import { useRef, useState } from "react";
-import { ApiRequestError, optimizeTrip, reoptimizeTrip, requestHero } from "@/contract/client";
+import { ApiRequestError, optimizeTrip, priceCheckTrip, reoptimizeTrip, requestHero } from "@/contract/client";
 import { DEMO_REQUESTS } from "@/contract/demo";
 import type { HeroImage, Money, RouteOption, TripResponse } from "@/contract/trip";
 
@@ -54,6 +54,8 @@ export default function DevConsole() {
     );
   };
 
+  const checkPrices = () => trip && run((signal) => priceCheckTrip(trip.requestId, trip.normalizedRequest, signal));
+
   async function makeHero(route: RouteOption) {
     setHero((h) => ({ ...h, [route.id]: { status: "queued" } }));
     try {
@@ -72,8 +74,11 @@ export default function DevConsole() {
     <main style={{ maxWidth: 1180, margin: "0 auto", padding: "24px 16px 64px", display: "grid", gap: 16 }}>
       <header style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 8 }}>
         <h1 style={{ margin: 0, fontSize: 22 }}>EventHopper · backend console</h1>
-        <span style={{ fontSize: 13, background: "#fff4d6", border: "1px solid #e7c96b", borderRadius: 999, padding: "4px 10px" }}>
-          Demo data — heuristic estimates, not live offers
+        <span style={{ fontSize: 13, display: "flex", gap: 8, alignItems: "center" }}>
+          <a href="/prices">Guest price lookup</a>
+          <span style={{ background: "#fff4d6", border: "1px solid #e7c96b", borderRadius: 999, padding: "4px 10px" }}>
+            {trip && trip.pricing.mode !== "estimates" ? "Mixed: provider prices + estimates — not bookable quotes" : "Demo data — heuristic estimates, not live offers"}
+          </span>
         </span>
       </header>
 
@@ -114,6 +119,12 @@ export default function DevConsole() {
               <input value={optional} onChange={(e) => setOptional(e.target.value)} placeholder="Bangkok, Taipei" style={{ padding: 8, borderRadius: 8, border: "1px solid #c5cbd3", width: 200 }} />
             </label>
             <button style={btn} onClick={recalc} disabled={loading}>Recalculate itinerary</button>
+            <button style={ghost} onClick={checkPrices} disabled={loading}>Check live prices</button>
+          </div>
+          <div style={{ fontSize: 13 }}>
+            <b>Pricing:</b> {trip.pricing.mode === "estimates" ? "estimates only" : trip.pricing.mode === "mixed" ? "mixed — some provider prices" : "provider prices for all flights and stays"}
+            {trip.pricing.checkedAt && ` · checked ${new Date(trip.pricing.checkedAt).toLocaleTimeString()} · ${trip.pricing.providerCalls} calls, ${trip.pricing.cacheHits} cached`}
+            {trip.pricing.mode !== "estimates" && <ul style={{ margin: "4px 0 0", paddingLeft: 18 }}>{trip.pricing.notes.map((n) => <li key={n}>{n}</li>)}</ul>}
           </div>
           {!trip.recommendedOptionId && <div style={{ color: "#a33" }}>No option fits this budget. The event stays locked; options below show what it would cost.</div>}
           <details><summary style={{ cursor: "pointer", fontSize: 13 }}>Assumptions</summary><ul style={{ fontSize: 13 }}>{trip.assumptions.map((a) => <li key={a}>{a}</li>)}</ul></details>
@@ -145,8 +156,8 @@ export default function DevConsole() {
                 {o.feasibility.warnings.length > 0 && <ul style={{ fontSize: 12, color: "#8a5a00", margin: 0, paddingLeft: 18 }}>{o.feasibility.warnings.map((w) => <li key={w}>{w}</li>)}</ul>}
                 <details><summary style={{ fontSize: 12, cursor: "pointer" }}>Legs & stays</summary>
                   <ul style={{ fontSize: 12 }}>
-                    {o.legs.map((l, i) => <li key={i}>{l.departureDate} {l.fromCity} → {l.toCity} (arr {l.arrivalDate}) · {fmt(l.estimatedCost)} · {l.estimateSource}</li>)}
-                    {o.stays.map((s, i) => <li key={`s${i}`}>{s.city} {s.checkIn} → {s.checkOut} · {s.nights}n {s.style} · {fmt(s.estimatedCost)} · {s.estimateSource}</li>)}
+                    {o.legs.map((l, i) => <li key={i}>{l.departureDate} {l.fromCity} → {l.toCity} (arr {l.arrivalDate}) · {fmt(l.estimatedCost)} · {l.estimateSource}{l.source && <> · {l.source.description}{l.source.searchUrl && <> · <a href={l.source.searchUrl} target="_blank" rel="noreferrer">search</a></>}</>}</li>)}
+                    {o.stays.map((s, i) => <li key={`s${i}`}>{s.city} {s.checkIn} → {s.checkOut} · {s.nights}n {s.style} · {fmt(s.estimatedCost)} · {s.estimateSource}{s.source && <> · {s.source.description}</>}</li>)}
                   </ul>
                 </details>
                 <div style={{ fontSize: 12, color: "#5b6470" }}>Score {o.score.total} · budget {o.score.budgetFit} · travel {o.score.travelEfficiency} · preferences {o.score.preferenceFit}</div>

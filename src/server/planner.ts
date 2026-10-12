@@ -25,7 +25,7 @@ import { formatMoney, money, sum } from "./money";
 
 export type Pattern = "event-focus" | "pre-event-stop" | "post-event-stop" | "lean" | "early-arrival";
 
-type CandidateSpec = {
+export type CandidateSpec = {
   pattern: Pattern;
   stop?: CityInfo;
   stopNights: number;
@@ -52,7 +52,6 @@ function flightArriving(est: Estimator, from: CityInfo, to: CityInfo, arrivalDat
 }
 
 function buildCandidate(req: NormalizedRequest, spec: CandidateSpec, est: Estimator): Candidate {
-  const currency = req.budget.currency;
   const origin = cityInfo(req.origin.city);
   const eventCity = cityInfo(req.event.city);
   const eventArrive = addDays(req.event.startDate, -PLANNING_RULES.arrivalBufferDays - spec.extraNights);
@@ -86,18 +85,34 @@ function buildCandidate(req: NormalizedRequest, spec: CandidateSpec, est: Estima
     ...visits.map((v) => ({ city: v.city.city, countryCode: v.city.countryCode, arrivalDate: v.arrive, departureDate: v.depart, purpose: v.purpose })),
     { city: origin.city, countryCode: origin.countryCode, arrivalDate: legs[legs.length - 1].arrivalDate, departureDate: legs[legs.length - 1].arrivalDate, purpose: "origin" },
   ];
+  return evaluateCandidate(req, spec, citySequence, legs, stays, est);
+}
 
-  // ---- Costs
+/**
+ * Price, check and score a concrete itinerary. Used for freshly planned
+ * candidates and again after a live price check replaces leg/stay prices.
+ */
+export function evaluateCandidate(
+  req: NormalizedRequest,
+  spec: CandidateSpec,
+  citySequence: CityStop[],
+  legs: Leg[],
+  stays: Stay[],
+  est: Estimator = heuristicEstimator,
+  extraWarnings: string[] = [],
+): Candidate {
+  const currency = req.budget.currency;
+  const origin = cityInfo(req.origin.city);
+  const eventStop = citySequence.find((s) => s.purpose === "event")!;
+
+  // ---- Costs (stays double as the list of city visits)
   const transport = sum(legs.map((l) => l.estimatedCost), currency);
   const lodging = sum(stays.map((s) => s.estimatedCost), currency);
   const localTransport = sum(
-    [
-      ...visits.map((v) => est.localTransport(v.city, diffDays(v.arrive, v.depart))),
-      money(origin.airportTransfer * 2 * 100, currency),
-    ],
+    [...stays.map((s) => est.localTransport(cityInfo(s.city), s.nights)), money(origin.airportTransfer * 2 * 100, currency)],
     currency,
   );
-  const foodAndActivities = sum(visits.map((v) => est.foodAndActivities(v.city, diffDays(v.arrive, v.depart))), currency);
+  const foodAndActivities = sum(stays.map((s) => est.foodAndActivities(cityInfo(s.city), s.nights)), currency);
   const subtotal = transport.amountMinor + lodging.amountMinor + localTransport.amountMinor + foodAndActivities.amountMinor;
   const contingency = money(Math.round(subtotal * PLANNING_RULES.contingencyRate), currency);
   const total = sum([transport, lodging, localTransport, foodAndActivities, contingency], currency);
@@ -106,7 +121,7 @@ function buildCandidate(req: NormalizedRequest, spec: CandidateSpec, est: Estima
 
   // ---- Constraints
   const check = checkHardConstraints(req, citySequence, legs, stays);
-  const warnings = [...check.violations];
+  const warnings = [...check.violations, ...extraWarnings];
   if (!withinBudget) warnings.push(`Over budget by ${formatMoney(money(-remaining.amountMinor, currency))}.`);
   else if (remaining.amountMinor < req.budget.amountMinor * 0.05)
     warnings.push(`Tight: only ${formatMoney(remaining)} left for surprises beyond the ${PLANNING_RULES.contingencyRate * 100}% contingency.`);
@@ -118,7 +133,7 @@ function buildCandidate(req: NormalizedRequest, spec: CandidateSpec, est: Estima
 
   const assumptions = [
     `${spec.style[0].toUpperCase()}${spec.style.slice(1)} lodging for ${stays.reduce((n, s) => n + s.nights, 0)} nights.`,
-    `Arrive in ${eventCity.city} ${formatShort(eventArrive)}, leave ${formatShort(eventDepart)}.`,
+    `Arrive in ${eventStop.city} ${formatShort(eventStop.arrivalDate)}, leave ${formatShort(eventStop.departureDate)}.`,
   ];
   if (spec.stop) assumptions.push(`${spec.stop.city}: ${spec.stopNights} night${spec.stopNights === 1 ? "" : "s"}.`);
 
@@ -144,6 +159,20 @@ function buildCandidate(req: NormalizedRequest, spec: CandidateSpec, est: Estima
     score,
     assumptions,
     heroImage: { status: "not_requested" },
+  };
+}
+
+/** Rebuild the planner's spec from a returned option (used to re-score after repricing). */
+export function specFromOption(option: RouteOption, req: NormalizedRequest): CandidateSpec {
+  const eventStay = option.stays.find((s) => s.city === req.event.city)!;
+  const stopStay = option.stays.find((s) => s.city !== req.event.city);
+  const plannedArrive = addDays(req.event.startDate, -PLANNING_RULES.arrivalBufferDays);
+  return {
+    pattern: option.pattern as Pattern,
+    stop: stopStay ? cityInfo(stopStay.city) : undefined,
+    stopNights: stopStay?.nights ?? 0,
+    style: eventStay.style,
+    extraNights: Math.max(0, diffDays(eventStay.checkIn, plannedArrive)),
   };
 }
 

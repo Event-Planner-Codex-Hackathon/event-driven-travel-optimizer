@@ -4,7 +4,7 @@ Preparation workspace for the OpenAI × Istanbul Slush'D Codex Hackathon on Octo
 
 The planned product compares trips around a fixed event, combining flights, accommodation, ticket costs when known, and optional cities. Deterministic code will check schedules and calculate costs; AI will interpret requests and explain the results.
 
-**Current status (event day):** a Next.js app with the backend vertical slice — request parsing, deterministic route planning, full reoptimization, and optional Fal.ai route banners — plus a backend console at `/dev`. The product UI is being built by the frontend track. All prices are heuristic/mock estimates, not live offers.
+**Current status (event day):** a Next.js app with the backend vertical slice — request parsing, deterministic route planning, full reoptimization, and optional Fal.ai route banners — an on-demand live price check (SerpApi), anonymous guest access with a single-price lookup at `/prices`, plus a backend console at `/dev`. The product UI is being built by the frontend track. All prices are heuristic/mock estimates, not live offers.
 
 ## Run locally
 
@@ -21,6 +21,9 @@ npm test                     # planner, parser and constraint tests
 | --- | --- | --- |
 | `FAL_KEY` | No | Server-side Fal.ai key for `POST /api/routes/{routeId}/hero`. Without it the endpoint returns `hero_disabled`. |
 | `FAL_MAX_GENERATIONS` | No | Per-process cap on banner generations (default 25). |
+| `SERPAPI_API_KEY` | No | Server-side key for live Google Flights / Hotels prices (`price-check`, `/prices`). Without it, estimates only. |
+| `SERPAPI_MAX_CALLS_PER_CHECK` | No | New provider calls allowed for one trip price check (default 12). |
+| `SERPAPI_MAX_CALLS_PER_HOUR` | No | Rolling hourly cap per server process (default 40). |
 
 API contract: [docs/api-contract.md](docs/api-contract.md). Backend design and limitations: [docs/backend.md](docs/backend.md).
 

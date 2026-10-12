@@ -34,3 +34,17 @@ export function formatShort(date: string): string {
     timeZone: "UTC",
   });
 }
+
+/** Today's calendar date in the product's home timezone (Istanbul), as YYYY-MM-DD. */
+export function todayLocal(timeZone = "Europe/Istanbul", now = new Date()): string {
+  const parts = new Intl.DateTimeFormat("en", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(now);
+  const part = (type: "year" | "month" | "day") => parts.find((p) => p.type === type)?.value;
+  const [year, month, day] = [part("year"), part("month"), part("day")];
+  if (!year || !month || !day) throw new Error(`Could not determine today's date in ${timeZone}.`);
+  return `${year}-${month}-${day}`;
+}

@@ -7,7 +7,7 @@
  */
 import { z } from "zod";
 
-export const CONTRACT_VERSION = "1.0.0";
+export const CONTRACT_VERSION = "1.1.0";
 
 // ---------- Primitive types ----------
 
@@ -20,6 +20,22 @@ export type Pace = "relaxed" | "balanced" | "fast";
 export type TransportMode = "flight" | "rail" | "bus" | "ferry" | "unknown";
 
 export type CityRef = { city: string; countryCode?: string; iataCode?: string };
+
+/** Where a provider-priced line item came from. Present only when estimateSource is "provider". */
+export type PriceSource = {
+  provider: "serpapi";
+  product: "google_flights" | "google_hotels";
+  /** When this server fetched it. Upstream results may be cached by the provider. */
+  fetchedAt: string;
+  /** True when served from this server's cache instead of a new provider call. */
+  fromCache: boolean;
+  /** Human-readable offer description, e.g. "Turkish Airlines TK54, nonstop" or a hotel name. */
+  description: string;
+  /** Public search page (never an offer/booking link). */
+  searchUrl?: string;
+  /** Extra caveats, e.g. "stay total derived from nightly rate × nights". */
+  notes?: string[];
+};
 
 // ---------- Request side ----------
 
@@ -45,14 +61,50 @@ export type NormalizedRequest = {
   };
 };
 
+const isoDate = z.iso.date();
+const moneySchema = z.object({ amountMinor: z.number().int().safe(), currency: z.literal("TRY") });
+const lodgingStyleSchema = z.enum(["budget", "standard", "comfort"]);
+
+/** Full validation for a NormalizedRequest echoed back by a client (fallback after a server restart). */
+export const normalizedRequestSchema = z.object({
+  origin: z.object({ city: z.string().min(1).max(60), countryCode: z.string().max(3).optional(), iataCode: z.string().max(4).optional() }),
+  event: z.object({
+    name: z.string().min(1).max(120),
+    city: z.string().min(1).max(60),
+    countryCode: z.string().max(3).optional(),
+    startDate: isoDate,
+    endDate: isoDate,
+    hardConstraint: z.literal(true),
+    sourceUrl: z
+      .url()
+      .max(300)
+      .refine((value) => {
+        try {
+          return new URL(value).protocol === "https:";
+        } catch {
+          return false;
+        }
+      }, "Event source URL must use HTTPS.")
+      .optional(),
+  }),
+  travelWindow: z.object({ startDate: isoDate, endDate: isoDate }),
+  budget: moneySchema.extend({ amountMinor: z.number().int().positive().max(Number.MAX_SAFE_INTEGER) }),
+  optionalCities: z.array(z.object({ city: z.string().min(1).max(60), countryCode: z.string().max(3).optional() })).max(2),
+  preferences: z.object({
+    maxStops: z.number().int().min(0).max(3).optional(),
+    preferredPace: z.enum(["relaxed", "balanced", "fast"]).optional(),
+    lodgingStyle: lodgingStyleSchema.optional(),
+  }),
+}) satisfies z.ZodType<NormalizedRequest>;
+
 /** Partial overrides a form or a reoptimization can apply on top of parsed text. */
 export const requestOverridesSchema = z
   .object({
-    origin: z.object({ city: z.string().min(1) }).optional(),
+    origin: z.object({ city: z.string().min(1).max(60) }).optional(),
     event: z
       .object({
-        name: z.string().min(1).optional(),
-        city: z.string().min(1).optional(),
+        name: z.string().min(1).max(120).optional(),
+        city: z.string().min(1).max(60).optional(),
         startDate: z.iso.date().optional(),
         endDate: z.iso.date().optional(),
       })
@@ -62,11 +114,11 @@ export const requestOverridesSchema = z
       .optional(),
     budget: z
       .object({
-        amountMinor: z.number().int().positive(),
-        currency: z.string().length(3),
+        amountMinor: z.number().int().positive().max(Number.MAX_SAFE_INTEGER),
+        currency: z.literal("TRY"),
       })
       .optional(),
-    optionalCities: z.array(z.object({ city: z.string().min(1) })).max(2).optional(),
+    optionalCities: z.array(z.object({ city: z.string().min(1).max(60) })).max(2).optional(),
     preferences: z
       .object({
         maxStops: z.number().int().min(0).max(3).optional(),
@@ -98,7 +150,7 @@ export const reoptimizeBodySchema = z.object({
    * Optional copy of the previous normalizedRequest. Used when the server no
    * longer has requestId in memory (e.g. restart / serverless cold start).
    */
-  baseRequest: z.unknown().optional(),
+  baseRequest: normalizedRequestSchema.optional(),
 });
 
 export type ReoptimizeBody = z.infer<typeof reoptimizeBodySchema>;
@@ -108,9 +160,9 @@ export const heroBodySchema = z.object({
   /** Fallback route context when the server no longer has routeId in memory. */
   route: z
     .object({
-      title: z.string(),
-      cities: z.array(z.string()).min(1),
-      eventName: z.string(),
+      title: z.string().min(1).max(120),
+      cities: z.array(z.string().min(1).max(60)).min(1).max(4),
+      eventName: z.string().min(1).max(120),
     })
     .optional(),
 });
@@ -136,6 +188,7 @@ export type Leg = {
   stops?: number;
   estimatedCost: Money;
   estimateSource: EstimateSource;
+  source?: PriceSource;
 };
 
 export type Stay = {
@@ -146,6 +199,7 @@ export type Stay = {
   style: LodgingStyle;
   estimatedCost: Money;
   estimateSource: EstimateSource;
+  source?: PriceSource;
 };
 
 export type CostBreakdown = {
@@ -209,6 +263,19 @@ export type TripResponse = {
   options: RouteOption[];
   /** Id of the highest-scoring option with feasibility.feasible, or null if none. */
   recommendedOptionId: string | null;
+  /** How the totals were priced. */
+  pricing: PricingSummary;
+};
+
+export type PricingSummary = {
+  /** "estimates": heuristic/mock only. "mixed": some provider prices. "provider": every leg and stay provider-priced. */
+  mode: "estimates" | "mixed" | "provider";
+  checkedAt?: string;
+  /** New provider calls made for this response. */
+  providerCalls: number;
+  /** Provider lookups answered from this server's cache. */
+  cacheHits: number;
+  notes: string[];
 };
 
 export type ApiError = {
@@ -220,6 +287,8 @@ export type ApiError = {
       | "hero_disabled"
       | "hero_limit_reached"
       | "hero_failed"
+      | "rate_limited"
+      | "provider_unavailable"
       | "internal";
     message: string;
     details?: unknown;
@@ -227,3 +296,60 @@ export type ApiError = {
 };
 
 export type HeroResponse = { routeId: string; heroImage: HeroImage; cached: boolean };
+
+// ---------- Live price check & guest price quotes ----------
+
+/** POST /api/trips/{requestId}/price-check */
+export const priceCheckBodySchema = z.object({
+  /** Previous normalizedRequest, used when the server no longer has requestId in memory. */
+  baseRequest: normalizedRequestSchema.optional(),
+});
+
+const city = z.string().min(1).max(60);
+
+/** POST /api/prices/quote — a single flight or hotel price, no trip needed. */
+export const quoteBodySchema = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("flight"), from: city, to: city, date: z.iso.date() }),
+  z.object({
+    kind: z.literal("hotel"),
+    city,
+    checkIn: z.iso.date(),
+    checkOut: z.iso.date(),
+    style: z.enum(["budget", "standard", "comfort"]).default("standard"),
+  }),
+]);
+
+export type QuoteBody = z.input<typeof quoteBodySchema>;
+
+export type QuoteOffer = {
+  price: Money;
+  description: string;
+  /** Flights only. */
+  departureDate?: string;
+  arrivalDate?: string;
+  durationMinutes?: number;
+  stops?: number;
+  /** Hotels only: true when the stay total was derived from a nightly rate. */
+  totalDerived?: boolean;
+};
+
+export type QuoteResponse = {
+  kind: "flight" | "hotel";
+  query: { from?: string; to?: string; date?: string; city?: string; checkIn?: string; checkOut?: string; nights?: number; style?: LodgingStyle };
+  /** Always present so the user can compare. */
+  estimate: { price: Money; estimateSource: "heuristic" | "mock" };
+  provider:
+    | { status: "ok"; offers: QuoteOffer[]; fetchedAt: string; fromCache: boolean; searchUrl?: string }
+    | { status: "unavailable"; reason: ProviderFailure; message: string };
+  scope: string;
+};
+
+export type ProviderFailure = "not_configured" | "quota" | "auth" | "timeout" | "empty" | "currency" | "error";
+
+/** GET /api/session */
+export type SessionResponse = {
+  guest: { id: string; isNew: boolean };
+  features: { livePrices: boolean; banners: boolean };
+  limits: Record<"priceCheck" | "quote" | "hero", { remaining: number; max: number; windowMinutes: number }>;
+  cities: Array<{ city: string; countryCode: string; iataCode: string }>;
+};
