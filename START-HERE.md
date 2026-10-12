@@ -4,6 +4,8 @@ This repository contains preparation documents for October 12, 2026. No applicat
 
 ## Read in this order
 
+First read the [team roles and coordination rules](AGENTS.md#team-roles-and-development-coordination). The implementation prompt is scoped to the Product Lead's frontend session; Onur will add his own role instructions before backend work.
+
 1. [Credential setup](CREDENTIAL-SETUP.md): the short account checklist to complete later; keys never belong in these documents.
 2. [Tooling readiness](TOOLING-READINESS.md): verified local tools, authentication results, and remaining checks.
 3. [Demo script](DEMO-CHECKLIST.md): the two-minute presentation, rehearsal sequence, and fallback wording.
@@ -31,6 +33,6 @@ Accounts are intentionally left to the user. No prompt for keys or account decis
 
 Before the build starts: check in, receive event access instructions, locate the submission form, confirm whether a hosted URL is required, and read any new rules. These steps do not authorize early application work.
 
-At 09:30 after authorization: issue the first prompt; create the app and repository; add secret handling; enter credentials locally; run the documented smoke checks. Timebox account troubleshooting to 20 minutes and continue the independent form/engine/UI work if blocked.
+After 09:30 and explicit authorization: issue the role-specific first prompt; agree the API contract and assign one owner for app initialization in the existing repository. Add secret handling and run the documented smoke checks in the responsible session. Timebox account troubleshooting to 20 minutes and continue independent work within each person's ownership if blocked.
 
 By 11:30: form-to-results path. By 12:20: destination replacement. At 14:30: feature freeze. By 15:30: submission package ready. Submit before 16:00.
