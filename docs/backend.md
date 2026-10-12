@@ -19,6 +19,11 @@ Owner: Backend & AI Engineering (see [AGENTS.md](../AGENTS.md#team-roles-and-dev
 | `src/server/quote.ts` | Single flight/hotel price lookup for guests. |
 | `src/server/providers/` | `PriceProvider` interface, SerpApi adapter, cache/quota runtime. |
 | `src/server/guest.ts` | Anonymous guest cookie and per-guest limits (no accounts). |
+| `src/server/comparison.ts` | Option-vs-baseline deltas and summaries. |
+| `src/server/events.ts` | Event search (catalog, Google Events, Ticketmaster) and Eventbrite import. |
+| `src/server/providers/fx.ts` | Frankfurter reference rates (budget conversion, display totals). |
+| `src/server/providers/weather.ts` | Open-Meteo daily forecast. |
+| `src/server/providers/observations.ts` | Record / replay of provider price observations. |
 | `src/server/store.ts` | In-memory store (demo only; not durable). |
 | `src/app/dev/page.tsx` | Backend console to exercise every endpoint. Not the product UI. |
 | `src/app/prices/page.tsx` | Functional guest price lookup page; the frontend track may restyle it. |
@@ -76,10 +81,32 @@ Bodies are capped at 32 KB before parsing (413). `baseRequest` fallbacks are val
 
 Banners use the Fal queue (`submit` → `status` → `result`). One HTTP request waits up to 50 s; if the job is still running or status polling fails transiently, the request id is kept and a retry in the same process resumes the job instead of submitting a second one. A process restart loses that in-memory id; no cross-instance guarantee is made.
 
+## Integrations added after v1.1
+
+| Integration | Key | Used for | Notes |
+| --- | --- | --- | --- |
+| Frankfurter | none | EUR/USD/GBP budgets → TRY; display totals | Daily reference rates, 6 h cache; the rate and date are recorded in assumptions. |
+| Open-Meteo | none | `GET /api/weather` | ~16-day horizon; later days are `beyond_forecast`. Free for non-commercial use with attribution. |
+| SerpApi Google Events | `SERPAPI_API_KEY` | `GET /api/events/search` | Shares the SerpApi hourly cap; 1 h cache. Dates as listed. |
+| Ticketmaster Discovery | `TICKETMASTER_API_KEY` | `GET /api/events/search` | Coverage of business conferences outside its markets is limited. |
+| Eventbrite | `EVENTBRITE_TOKEN` | `POST /api/events/import` | Keyword search was shut down in 2019; import by event link/id only. Token sent as a Bearer header. |
+| Recorded observations | — | `PRICE_MODE=record` / `replay` | See `data/observations/README.md`. |
+
+Not verified against live responses yet: SerpApi (flights, hotels, events), Ticketmaster, Eventbrite, Fal.ai — no keys were configured during development; adapters are unit-tested against documented shapes. Frankfurter and Open-Meteo were called live.
+
 ## Other provider candidates
 
-- **Frankfurter** (FX, no key): accept USD/EUR budgets and show converted totals with rate date.
-- **Ticketmaster** / SerpApi Events: optional event lookup; manual event entry stays the main path.
-- **Geoapify**, **Open-Meteo**: decorative context (map, weather) for the selected route.
-- **Amadeus Self-Service**: the preparation notes record its developer portal as deprecated (repository archived July 2026); verify before investing time.
+- **Geoapify**: map and nearby places for the selected route.
+- **Amadeus Self-Service**: portal closed July 2026; not pursued.
 - **LiteAPI**: sandbox hotel data — must be labeled sandbox, never as live prices.
+
+
+## v1.2.1 review safeguards
+
+Review findings and concrete regressions: [backend-review-2026-10-12.md](backend-review-2026-10-12.md).
+
+The locked event cannot change through reoptimization. Restart fallbacks accept optional `baseRequirementsVersion`; clients should pass the latest displayed version. Live, record and replay caches are separated; recording directories are isolated. A failed second price check rebuilds heuristic costs rather than relabeling old provider prices. Replay files require matching queries, valid TRY money, valid observation timestamps and supported offers. Writes use atomic rename, and recordings are Git-ignored until sharing is approved.
+
+Event discovery does not infer a missing year or end date into a plannable hard constraint. Ticketmaster and Eventbrite country conflicts prevent city matching. Concurrent identical event searches share calls. Ticketmaster and Eventbrite attempts each have an hourly process cap of 40; failures count. These in-memory caps reset on restart and supplement, rather than replace, the provider account's actual free-plan allowance. Confirm the account allowance and disable paid overage before real-key tests.
+
+Weather ranges are checked before daily arrays are allocated, and missing forecast values stay unavailable. FX responses must contain one common valid reference date. Budget conversion assumptions survive destination-only reoptimization.

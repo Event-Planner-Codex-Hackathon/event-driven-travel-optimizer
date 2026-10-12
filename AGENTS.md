@@ -69,3 +69,21 @@ Equal GitHub Owner access does not override development ownership.
 - Only link out to public provider/search pages. Distinguish search links from offer-specific links.
 - Test meaningful invariants: event protection, overnight flights, arrival deadlines, hotel nights, exact cost sums, unknown costs, stale provenance, and city replacement invalidation.
 - Record what was built during the event accurately. Preserve this preparation boundary and do not misrepresent preparation as event-day implementation.
+
+## Event-day build log (backend track)
+
+Implementation was authorized by Onur on October 12, 2026 after the official start; the "Current phase" section above describes the preparation period only. Onur directed the backend work with Codex (OpenAI). Each entry names the tool that did the work. Source code comments do not name tools. The Product Lead builds the frontend separately in their own Codex session.
+
+| Time (Istanbul) | Tool | Work | Commit |
+| --- | --- | --- | --- |
+| 11:33–12:00 | Codex | Next.js/TypeScript scaffold; shared contract v1.0 (`src/contract`); deterministic parser, planner, independent event-lock checker, heuristic estimates, three-option selection, full reoptimization; Fal.ai banner endpoint; backend console `/dev`; tests; API and backend docs | 4ee634e |
+| 12:00–12:10 | Codex | Branch and upstream cleanup (`main` reset to `origin/main`, `onur/backend-planner` tracking); commit and push of the first slice | 4ee634e |
+| 12:10–12:25 | Codex | Contract v1.1: on-demand SerpApi price check for the three options (dedupe, cache, call caps), provider provenance per line, guest session with per-guest limits, single price lookup `/prices` | f4090ef |
+| 12:25–12:35 | Codex | Review of v1.1: 10 findings (guest quota refunds, early-arrival costing, currency fail-closed, body size, stale assumptions, Fal timeout double-spend, Istanbul date, cookie parsing, `baseRequest` validation) | — |
+| 12:35–12:50 | Codex | Fixes for those findings (IP limit, exact-day fares, TRY echo required, 32 KB body cap, mode-aware assumptions, Fal queue resume, full `normalizedRequestSchema`) | f4090ef |
+| 12:50–13:11 | Codex | Second, deeper review and fixes: shared in-flight results marked as cache hits, refund reservations safe under concurrency, failed provider calls counted, Fal parallel requests as one generation, stricter provider validation, fixed Google search URLs, safe-integer budgets; commit | f4090ef |
+| 13:15–13:20 | Codex | Improvement proposals (event search, comparison deltas, replay, FX, weather, Geoapify, storage, LLM parsing) | — |
+| 13:20–13:36 | Codex | Contract v1.2: option comparison deltas, Frankfurter FX (foreign budgets, converted totals), Open-Meteo weather, record/replay of price observations, event search (catalog, Google Events, Ticketmaster), Eventbrite import, `.env.local` template | included in review commit |
+| 14:01–14:13 | Codex | Review of v1.2 and fixes: event immutability, mode/directory cache isolation, honest repricing fallback, validated replay/atomic records, event dates/countries, shared search calls, Ticketmaster/Eventbrite caps, restart version preservation, FX provenance and bounded weather; contract v1.2.1; 87 tests, typecheck and production build | this commit |
+
+Verification status at 13:36: 67 unit tests, typecheck and production build pass. Frankfurter and Open-Meteo were called live. SerpApi, Ticketmaster, Eventbrite and Fal.ai have not been called with real keys yet; their adapters are tested against documented response shapes only.

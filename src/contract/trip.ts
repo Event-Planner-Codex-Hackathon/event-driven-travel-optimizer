@@ -7,7 +7,7 @@
  */
 import { z } from "zod";
 
-export const CONTRACT_VERSION = "1.1.0";
+export const CONTRACT_VERSION = "1.2.1";
 
 // ---------- Primitive types ----------
 
@@ -29,6 +29,13 @@ export type PriceSource = {
   fetchedAt: string;
   /** True when served from this server's cache instead of a new provider call. */
   fromCache: boolean;
+  /**
+   * "live": fetched from the provider during this session. "replay": a recorded
+   * observation saved earlier — show observedAt and never present it as current.
+   */
+  retrieval?: "live" | "replay";
+  /** When the provider returned this result (original time for replays). */
+  observedAt?: string;
   /** Human-readable offer description, e.g. "Turkish Airlines TK54, nonstop" or a hotel name. */
   description: string;
   /** Public search page (never an offer/booking link). */
@@ -115,7 +122,8 @@ export const requestOverridesSchema = z
     budget: z
       .object({
         amountMinor: z.number().int().positive().max(Number.MAX_SAFE_INTEGER),
-        currency: z.literal("TRY"),
+        /** Non-TRY budgets are converted to TRY with dated reference rates (see TripResponse.fx). */
+        currency: z.enum(["TRY", "EUR", "USD", "GBP"]),
       })
       .optional(),
     optionalCities: z.array(z.object({ city: z.string().min(1).max(60) })).max(2).optional(),
@@ -151,6 +159,8 @@ export const reoptimizeBodySchema = z.object({
    * longer has requestId in memory (e.g. restart / serverless cold start).
    */
   baseRequest: normalizedRequestSchema.optional(),
+  /** Latest version shown by the client; preserves monotonic versions after a restart. */
+  baseRequirementsVersion: z.number().int().min(1).max(Number.MAX_SAFE_INTEGER - 1).optional(),
 });
 
 export type ReoptimizeBody = z.infer<typeof reoptimizeBodySchema>;
@@ -244,6 +254,43 @@ export type RouteOption = {
   score: { total: number; budgetFit: number; travelEfficiency: number; preferenceFit: number };
   assumptions: string[];
   heroImage?: HeroImage;
+  /** How this option differs from the baseline (recommended, else top-ranked) option. */
+  comparison?: OptionComparison;
+  /** Total converted to other currencies for display only (see TripResponse.fx). */
+  convertedTotals?: Money[];
+};
+
+export type OptionComparison = {
+  baselineOptionId: string;
+  isBaseline: boolean;
+  /** This option minus the baseline. Negative money = cheaper; negative minutes = less flying. */
+  delta: {
+    total: Money;
+    transport: Money;
+    lodging: Money;
+    nights: number;
+    flights: number;
+    connections: number;
+    travelMinutes: number;
+  };
+  /** Cities this option visits that the baseline does not, and vice versa. */
+  addedCities: string[];
+  droppedCities: string[];
+  /** False when the two options are priced from different sources, so money deltas are indicative only. */
+  comparablePricing: boolean;
+  /** e.g. "4,000 TRY cheaper · 1 more flight · 1 night less · adds Bangkok". Empty for the baseline. */
+  summary: string;
+};
+
+/** Display-only exchange rates (never used for budget checks unless stated in assumptions). */
+export type FxInfo = {
+  base: string;
+  /** quote currency → units of quote per 1 unit of base */
+  rates: Record<string, number>;
+  /** Reference date of the rates (provider publication date). */
+  date: string;
+  source: "frankfurter";
+  note: string;
 };
 
 export type TripResponse = {
@@ -265,6 +312,8 @@ export type TripResponse = {
   recommendedOptionId: string | null;
   /** How the totals were priced. */
   pricing: PricingSummary;
+  /** Reference exchange rates used for convertedTotals (and for a foreign-currency budget, if any). */
+  fx?: FxInfo;
 };
 
 export type PricingSummary = {
@@ -276,6 +325,8 @@ export type PricingSummary = {
   /** Provider lookups answered from this server's cache. */
   cacheHits: number;
   notes: string[];
+  /** "replay" when provider lines come from recorded observations instead of live searches. */
+  retrieval?: "live" | "replay";
 };
 
 export type ApiError = {
@@ -303,6 +354,8 @@ export type HeroResponse = { routeId: string; heroImage: HeroImage; cached: bool
 export const priceCheckBodySchema = z.object({
   /** Previous normalizedRequest, used when the server no longer has requestId in memory. */
   baseRequest: normalizedRequestSchema.optional(),
+  /** Latest version shown by the client; preserves monotonic versions after a restart. */
+  baseRequirementsVersion: z.number().int().min(1).max(Number.MAX_SAFE_INTEGER - 1).optional(),
 });
 
 const city = z.string().min(1).max(60);
@@ -339,7 +392,7 @@ export type QuoteResponse = {
   /** Always present so the user can compare. */
   estimate: { price: Money; estimateSource: "heuristic" | "mock" };
   provider:
-    | { status: "ok"; offers: QuoteOffer[]; fetchedAt: string; fromCache: boolean; searchUrl?: string }
+    | { status: "ok"; offers: QuoteOffer[]; fetchedAt: string; fromCache: boolean; searchUrl?: string; retrieval?: "live" | "replay"; observedAt?: string }
     | { status: "unavailable"; reason: ProviderFailure; message: string };
   scope: string;
 };
@@ -349,7 +402,99 @@ export type ProviderFailure = "not_configured" | "quota" | "auth" | "timeout" | 
 /** GET /api/session */
 export type SessionResponse = {
   guest: { id: string; isNew: boolean };
-  features: { livePrices: boolean; banners: boolean };
-  limits: Record<"priceCheck" | "quote" | "hero", { remaining: number; max: number; windowMinutes: number }>;
+  /** livePrices is true for live, record and replay modes; priceMode says which. */
+  features: { livePrices: boolean; banners: boolean; priceMode?: "live" | "record" | "replay" | "off"; eventSearch?: boolean; eventImport?: boolean };
+  limits: Record<"priceCheck" | "quote" | "hero", { remaining: number; max: number; windowMinutes: number }>
+    & Partial<Record<"eventSearch", { remaining: number; max: number; windowMinutes: number }>>;
   cities: Array<{ city: string; countryCode: string; iataCode: string }>;
 };
+
+// ---------- Weather (decorative context; never affects planning) ----------
+
+/** GET /api/weather?city=Singapore&start=2026-10-26&end=2026-10-30 */
+export const weatherQuerySchema = z.object({
+  city: z.string().min(1).max(60),
+  start: z.iso.date(),
+  end: z.iso.date(),
+});
+
+export type WeatherDay = {
+  date: string;
+  /** "beyond_forecast": the date is past the provider's forecast horizon (about 16 days). */
+  status: "forecast" | "beyond_forecast" | "unavailable";
+  tempMaxC?: number;
+  tempMinC?: number;
+  precipitationProbabilityMax?: number;
+  precipitationMm?: number;
+  weatherCode?: number;
+  /** Plain-language WMO code description, e.g. "Slight rain showers". */
+  summary?: string;
+};
+
+export type WeatherResponse = {
+  city: string;
+  days: WeatherDay[];
+  source: "open-meteo";
+  fetchedAt?: string;
+  /** Last date the provider can forecast today. */
+  forecastHorizon: string;
+  attribution: string;
+  note: string;
+};
+
+// ---------- Event search & import ----------
+
+/** GET /api/events/search?q=SWITCH&city=Singapore */
+export const eventSearchQuerySchema = z.object({
+  q: z.string().trim().min(2).max(100),
+  city: z.string().trim().min(1).max(60).optional(),
+});
+
+/** POST /api/events/import — one Eventbrite event by link or numeric id. */
+export const eventImportBodySchema = z.object({
+  url: z.string().trim().min(1).max(500),
+});
+
+export type EventSource = "catalog" | "google_events" | "ticketmaster" | "eventbrite";
+
+export type EventCandidate = {
+  /** Source-scoped id, e.g. "ticketmaster:G5v..." */
+  id: string;
+  source: EventSource;
+  name: string;
+  /** City as the source reports it. */
+  city?: string;
+  /** Matching city in our estimate catalog; absent when the trip cannot be planned yet. */
+  catalogCity?: string;
+  countryCode?: string;
+  venue?: string;
+  /** Local calendar dates (inclusive). Missing when the source did not give a parseable date. */
+  startDate?: string;
+  endDate?: string;
+  sourceUrl?: string;
+  /** "verified": curated catalog. "listed": as the source lists it. "partial": some dates missing/guessed-free. */
+  dateConfidence: "verified" | "listed" | "partial";
+  /** True when city and both dates are known and the city is in the catalog. */
+  plannable: boolean;
+  warnings: string[];
+  /**
+   * Ready-to-send `overrides.event` for POST /api/trips/optimize. Only send it
+   * after the user confirms the event; it becomes the locked hard constraint.
+   */
+  overrides?: { event: { name: string; city: string; startDate: string; endDate: string } };
+};
+
+export type EventSourceStatus = {
+  source: EventSource;
+  status: "ok" | "empty" | "not_configured" | "quota" | "error";
+  message?: string;
+};
+
+export type EventSearchResponse = {
+  query: { q: string; city?: string };
+  results: EventCandidate[];
+  sources: EventSourceStatus[];
+  note: string;
+};
+
+export type EventImportResponse = { candidate: EventCandidate; sources: EventSourceStatus[] };

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { SessionResponse } from "@/contract/trip";
 import { CITIES } from "@/server/catalog";
 import { GUEST_LIMITS, attachGuestCookie, guestFromRequest, remaining } from "@/server/guest";
-import { getPricingRuntime } from "@/server/providers/runtime";
+import { getPricingRuntime, priceMode } from "@/server/providers/runtime";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,7 +18,7 @@ export async function GET(req: Request) {
   ) as SessionResponse["limits"];
   const body: SessionResponse = {
     guest: { id: guest.id, isNew: guest.isNew },
-    features: { livePrices: getPricingRuntime().available, banners: Boolean(process.env.FAL_KEY) },
+    features: { livePrices: getPricingRuntime().available, banners: Boolean(process.env.FAL_KEY), priceMode: priceMode(), eventSearch: Boolean(process.env.SERPAPI_API_KEY || process.env.TICKETMASTER_API_KEY), eventImport: Boolean(process.env.EVENTBRITE_TOKEN) },
     limits,
     cities: CITIES.map((c) => ({ city: c.city, countryCode: c.countryCode, iataCode: c.iataCode })),
   };

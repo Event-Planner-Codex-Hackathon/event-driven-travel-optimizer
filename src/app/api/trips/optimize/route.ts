@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { optimizeBodySchema, type TripResponse } from "@/contract/trip";
 import { apiError, readBodyOr413 } from "@/server/http";
+import { getFxRates } from "@/server/providers/fx";
 import { optimizeTrip } from "@/server/trips";
 
 export const runtime = "nodejs";
@@ -11,7 +12,8 @@ export async function POST(req: Request) {
   const parsed = optimizeBodySchema.safeParse(body.body);
   if (!parsed.success) return apiError(400, "invalid_body", "Invalid request body.", parsed.error.issues);
   try {
-    return NextResponse.json<TripResponse>(optimizeTrip(parsed.data));
+    const fx = await getFxRates();
+    return NextResponse.json<TripResponse>(optimizeTrip(parsed.data, undefined, fx));
   } catch (err) {
     console.error("optimize failed", err);
     return apiError(500, "internal", "Could not plan this trip.");

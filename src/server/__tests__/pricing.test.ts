@@ -25,7 +25,7 @@ function fakeProvider(opts: { flightPrice?: number; hotelPerNight?: number; fail
       const arrival = addDays(q.date, (longHaul ? 1 : 0) + (opts.lateBy ?? 0));
       return {
         ok: true,
-        fetchedAt: "2026-10-12T10:00:00.000Z",
+        fetchedAt: "2026-10-12T10:00:00.000Z", observedAt: "2026-10-12T10:00:00.000Z", retrieval: "live" as const,
         fromCache: false,
         searchUrl: "https://www.google.com/travel/flights?test",
         offers: [
@@ -40,7 +40,7 @@ function fakeProvider(opts: { flightPrice?: number; hotelPerNight?: number; fail
       const nights = Math.round((Date.parse(q.checkOut) - Date.parse(q.checkIn)) / 86_400_000);
       return {
         ok: true,
-        fetchedAt: "2026-10-12T10:00:00.000Z",
+        fetchedAt: "2026-10-12T10:00:00.000Z", observedAt: "2026-10-12T10:00:00.000Z", retrieval: "live" as const,
         fromCache: false,
         offers: [{ name: "Test Hotel", total: money((opts.hotelPerNight ?? 1_000) * nights * 100, "TRY"), derivedFromNightly: false, hotelClass: 3 }],
       };
@@ -324,15 +324,33 @@ describe("review fixes", () => {
     expect(normalizedRequestSchema.safeParse({ ...good, budget: { amountMinor: 500_000, currency: "USD" } }).success).toBe(false);
   });
 
-  it("does not let non-TRY override budgets crash the planner", () => {
-    const result = optimizeTrip({ text: DEMO_REQUESTS[0].text, overrides: { budget: { amountMinor: 1_000_000, currency: "USD" } } as never }, TODAY);
+  it("asks for a TRY budget when a foreign budget has no exchange rate", () => {
+    const result = optimizeTrip({ text: DEMO_REQUESTS[0].text, overrides: { budget: { amountMinor: 1_000_000, currency: "USD" } } }, TODAY);
     expect(result.status).toBe("needs_input");
-    expect(result.clarificationQuestions.join(" ")).toMatch(/TRY only/);
+    expect(result.clarificationQuestions.join(" ")).toMatch(/USD exchange rate.*budget in TRY/);
   });
 
   it("computes today in Istanbul, not UTC", async () => {
     const { todayLocal } = await import("../dates");
     // 22:30 UTC on Oct 12 is already Oct 13 in Istanbul (UTC+3).
     expect(todayLocal("Europe/Istanbul", new Date("2026-10-12T22:30:00Z"))).toBe("2026-10-13");
+  });
+});
+
+
+describe("repricing provenance regression", () => {
+  it("rebuilds actual estimates when a second check fails, rather than relabeling old provider prices", async () => {
+    const trip = ready(optimizeTrip({ text: DEMO_REQUESTS[1].text }, TODAY));
+    const priced = await priceCheckTrip(trip, new PricingRuntime(fakeProvider({ flightPrice: 100, hotelPerNight: 100 }).provider));
+    resetPricingState();
+    const failing: PriceProvider = { name: "failing", async flights() { return { ok: false, reason: "error", message: "offline" }; }, async hotels() { return { ok: false, reason: "error", message: "offline" }; } };
+    const checked = await priceCheckTrip(priced, new PricingRuntime(failing));
+    for (const o of checked.options) {
+      const original = trip.options.find((x) => x.pattern === o.pattern)!;
+      expect(o.legs.map((l) => l.estimatedCost)).toEqual(original.legs.map((l) => l.estimatedCost));
+      expect(o.stays.map((s) => s.estimatedCost)).toEqual(original.stays.map((s) => s.estimatedCost));
+      expect(o.costBreakdown.total).toEqual(original.costBreakdown.total);
+      expect([...o.legs, ...o.stays].every((l) => l.source === undefined)).toBe(true);
+    }
   });
 });

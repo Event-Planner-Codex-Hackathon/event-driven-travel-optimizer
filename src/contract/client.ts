@@ -12,8 +12,11 @@ import type {
   QuoteResponse,
   RequestOverrides,
   RouteOption,
+  EventImportResponse,
+  EventSearchResponse,
   SessionResponse,
   TripResponse,
+  WeatherResponse,
 } from "./trip";
 
 export class ApiRequestError extends Error {
@@ -51,10 +54,11 @@ export const reoptimizeTrip = (
   changes: RequestOverrides,
   baseRequest?: NormalizedRequest | null,
   signal?: AbortSignal,
+  baseRequirementsVersion?: number,
 ) =>
   post<TripResponse>(
     `/api/trips/${encodeURIComponent(requestId)}/reoptimize`,
-    { changes, ...(baseRequest ? { baseRequest } : {}) },
+    { changes, ...(baseRequest ? { baseRequest } : {}), ...(baseRequirementsVersion !== undefined ? { baseRequirementsVersion } : {}) },
     signal,
   );
 
@@ -72,8 +76,8 @@ export const requestHero = (route: RouteOption, signal?: AbortSignal) =>
   );
 
 /** Prices the current three options with live provider data; returns a new requirements version. */
-export const priceCheckTrip = (requestId: string, baseRequest?: NormalizedRequest | null, signal?: AbortSignal) =>
-  post<TripResponse>(`/api/trips/${encodeURIComponent(requestId)}/price-check`, baseRequest ? { baseRequest } : {}, signal);
+export const priceCheckTrip = (requestId: string, baseRequest?: NormalizedRequest | null, signal?: AbortSignal, baseRequirementsVersion?: number) =>
+  post<TripResponse>(`/api/trips/${encodeURIComponent(requestId)}/price-check`, { ...(baseRequest ? { baseRequest } : {}), ...(baseRequirementsVersion !== undefined ? { baseRequirementsVersion } : {}) }, signal);
 
 /** Guest price lookup for one flight or one hotel stay. */
 export const quotePrice = (body: QuoteBody, signal?: AbortSignal) => post<QuoteResponse>("/api/prices/quote", body, signal);
@@ -90,3 +94,30 @@ export async function getSession(signal?: AbortSignal): Promise<SessionResponse>
   if (!res.ok) throw new ApiRequestError(res.status, "internal", `Request failed (${res.status}).`);
   return (await res.json()) as SessionResponse;
 }
+
+async function get<T>(url: string, signal?: AbortSignal): Promise<T> {
+  let res: Response;
+  try {
+    res = await fetch(url, { signal, cache: "no-store" });
+  } catch (err) {
+    if ((err as Error).name === "AbortError") throw err;
+    throw new ApiRequestError(0, "network", "Could not reach the server.");
+  }
+  const json = await res.json().catch(() => undefined);
+  if (!res.ok) {
+    const e = (json as ApiError | undefined)?.error;
+    throw new ApiRequestError(res.status, e?.code ?? "internal", e?.message ?? `Request failed (${res.status}).`);
+  }
+  return json as T;
+}
+
+/** Event suggestions (catalog + configured providers). Confirm one before sending its overrides.event. */
+export const searchEvents = (q: string, city?: string, signal?: AbortSignal) =>
+  get<EventSearchResponse>(`/api/events/search?${new URLSearchParams({ q, ...(city ? { city } : {}) })}`, signal);
+
+/** Import one Eventbrite event from its link or id. */
+export const importEvent = (url: string, signal?: AbortSignal) => post<EventImportResponse>("/api/events/import", { url }, signal);
+
+/** Daily forecast for a catalog city; days past the forecast horizon are marked, not guessed. */
+export const getWeather = (city: string, start: string, end: string, signal?: AbortSignal) =>
+  get<WeatherResponse>(`/api/weather?${new URLSearchParams({ city, start, end })}`, signal);

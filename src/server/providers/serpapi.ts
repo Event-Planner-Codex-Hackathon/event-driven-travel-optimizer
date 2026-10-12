@@ -131,7 +131,8 @@ export function createSerpApiProvider(apiKey: string): PriceProvider {
       if (!currencyOk(r.json)) return { ok: false, reason: "currency", message: "Provider did not return TRY prices." };
       const offers = parseFlights(r.json);
       if (offers.length === 0) return { ok: false, reason: "empty", message: "No priced flights for this search." };
-      return { ok: true, offers, fetchedAt: new Date().toISOString(), fromCache: false, searchUrl: GOOGLE_FLIGHTS_URL };
+      const now = new Date().toISOString();
+      return { ok: true, offers, fetchedAt: now, observedAt: now, retrieval: "live", fromCache: false, searchUrl: GOOGLE_FLIGHTS_URL };
     },
     async hotels(q): Promise<ProviderResult<HotelOffer>> {
       const params: Record<string, string> = {
@@ -152,7 +153,8 @@ export function createSerpApiProvider(apiKey: string): PriceProvider {
       if (!currencyOk(r.json)) return { ok: false, reason: "currency", message: "Provider did not return TRY prices." };
       const offers = parseHotels(r.json, diffDays(q.checkIn, q.checkOut));
       if (offers.length === 0) return { ok: false, reason: "empty", message: "No priced hotels for this search." };
-      return { ok: true, offers, fetchedAt: new Date().toISOString(), fromCache: false, searchUrl: GOOGLE_HOTELS_URL };
+      const now = new Date().toISOString();
+      return { ok: true, offers, fetchedAt: now, observedAt: now, retrieval: "live", fromCache: false, searchUrl: GOOGLE_HOTELS_URL };
     },
   };
 }

@@ -24,6 +24,13 @@ npm test                     # planner, parser and constraint tests
 | `SERPAPI_API_KEY` | No | Server-side key for live Google Flights / Hotels prices (`price-check`, `/prices`). Without it, estimates only. |
 | `SERPAPI_MAX_CALLS_PER_CHECK` | No | New provider calls allowed for one trip price check (default 12). |
 | `SERPAPI_MAX_CALLS_PER_HOUR` | No | Rolling hourly cap per server process (default 40). |
+| `PRICE_MODE` | No | `live` (default), `record` (live + save results) or `replay` (saved results only, no key needed). |
+| `PRICE_OBSERVATIONS_DIR` | No | Where recorded observations live (default `data/observations`). |
+| `TICKETMASTER_MAX_CALLS_PER_HOUR` / `EVENTBRITE_MAX_CALLS_PER_HOUR` | No | Each provider’s per-process rolling hourly cap (default 40); failed attempts count. |
+| `TICKETMASTER_API_KEY` | No | Ticketmaster event search. |
+| `EVENTBRITE_TOKEN` | No | Import one Eventbrite event by link. |
+
+Frankfurter (exchange rates) and Open-Meteo (weather) need no key.
 
 API contract: [docs/api-contract.md](docs/api-contract.md). Backend design and limitations: [docs/backend.md](docs/backend.md).
 

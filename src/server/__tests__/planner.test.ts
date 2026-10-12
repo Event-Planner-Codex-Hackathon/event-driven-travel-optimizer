@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { TripResponse } from "@/contract/trip";
 import { DEMO_REQUESTS } from "@/contract/demo";
+import { compareOptions } from "../comparison";
 import { checkHardConstraints } from "../constraints";
 import { eachDate } from "../dates";
 import { parseRequestText } from "../parser";
@@ -114,7 +115,7 @@ describe("optimize", () => {
   });
 
   it("is deterministic for the same input", () => {
-    const strip = (r: TripResponse) => r.options.map(({ id: _i, ...o }) => o);
+    const strip = (r: TripResponse) => r.options.map(({ id: _i, comparison, ...o }) => ({ ...o, comparison: comparison && { ...comparison, baselineOptionId: "" } }));
     expect(strip(optimizeTrip({ text: demoA.text }, TODAY))).toEqual(strip(optimizeTrip({ text: demoA.text }, TODAY)));
   });
 
@@ -126,4 +127,53 @@ describe("optimize", () => {
     expect(r.normalizedRequest.optionalCities.map((c) => c.city)).toEqual(["Taipei"]);
     expect(r.options.some((o) => o.citySequence.some((s) => s.city === "Taipei"))).toBe(true);
   });
+});
+
+describe("option comparison", () => {
+  it("compares every option to the recommended one with exact deltas", () => {
+    const r = ready(optimizeTrip({ text: demoA.text }, TODAY));
+    const base = r.options.find((o) => o.id === r.recommendedOptionId)!;
+    for (const o of r.options) {
+      const c = o.comparison!;
+      expect(c.baselineOptionId).toBe(base.id);
+      expect(c.isBaseline).toBe(o.id === base.id);
+      expect(c.delta.total.amountMinor).toBe(o.costBreakdown.total.amountMinor - base.costBreakdown.total.amountMinor);
+      expect(c.delta.flights).toBe(o.legs.length - base.legs.length);
+      expect(c.comparablePricing).toBe(true); // all estimates
+      if (o.id === base.id) expect(c.summary).toBe("");
+      else expect(c.summary).toMatch(/TRY (cheaper|more)|same total/);
+    }
+    const direct = r.options.find((o) => o.pattern === "event-focus")!;
+    if (direct.id !== base.id) expect(direct.comparison!.droppedCities.length).toBeGreaterThan(0);
+  });
+});
+
+
+describe("fixed event during reoptimization", () => {
+  it("rejects changing the locked city, dates or identity, including fallback requests", () => {
+    const trip = ready(optimizeTrip({ text: demoA.text }, TODAY));
+    for (const event of [{ city: "Bangkok" }, { startDate: "2026-10-28" }, { endDate: "2026-10-28" }, { name: "Different event" }]) {
+      expect(reoptimizeTrip(trip.requestId, { event })).toMatchObject({ ok: false, code: "invalid_body" });
+      expect(reoptimizeTrip("forgotten", { event }, trip.normalizedRequest)).toMatchObject({ ok: false, code: "invalid_body" });
+    }
+    const same = reoptimizeTrip(trip.requestId, { event: { city: trip.normalizedRequest.event.city } });
+    expect(same.ok && same.response.normalizedRequest?.event).toEqual(trip.normalizedRequest.event);
+  });
+});
+
+
+it("continues the client's requirements version after memory loss", () => {
+  const trip = ready(optimizeTrip({ text: demoA.text }, TODAY));
+  const result = reoptimizeTrip("forgotten-version", { optionalCities: [{ city: "Taipei" }] }, trip.normalizedRequest, undefined, 8);
+  expect(result.ok && result.response.requirementsVersion).toBe(9);
+});
+
+
+it("marks live versus replay provider comparisons as indicative", () => {
+  const trip = ready(optimizeTrip({ text: demoA.text }, TODAY));
+  const mode = (retrieval: "live" | "replay") => ({ ...trip.options[0], id: retrieval,
+    legs: trip.options[0].legs.map((l) => ({ ...l, estimateSource: "provider" as const, source: { provider: "serpapi" as const, product: "google_flights" as const, fetchedAt: "2026-10-12T09:30:00Z", fromCache: false, retrieval, description: "synthetic test" } })),
+    stays: trip.options[0].stays.map((s) => ({ ...s, estimateSource: "provider" as const, source: { provider: "serpapi" as const, product: "google_hotels" as const, fetchedAt: "2026-10-12T09:30:00Z", fromCache: false, retrieval, description: "synthetic test" } })),
+  });
+  expect(compareOptions(mode("live"), mode("replay")).comparablePricing).toBe(false);
 });

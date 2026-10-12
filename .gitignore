@@ -12,3 +12,7 @@ node_modules/
 out/
 next-env.d.ts
 *.tsbuildinfo
+
+# Provider observations require terms review and explicit approval before sharing
+data/observations/*
+!data/observations/README.md

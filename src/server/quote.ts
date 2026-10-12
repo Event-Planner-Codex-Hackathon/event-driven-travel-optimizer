@@ -41,6 +41,8 @@ export async function quotePrice(input: QuoteInput, runtime: PricingRuntime, tod
               status: "ok",
               fetchedAt: r.fetchedAt,
               fromCache: r.fromCache,
+              retrieval: r.retrieval,
+              observedAt: r.observedAt,
               ...(r.searchUrl ? { searchUrl: r.searchUrl } : {}),
               offers: r.offers
                 .filter((o) => o.departureDate === input.date)
@@ -75,6 +77,8 @@ export async function quotePrice(input: QuoteInput, runtime: PricingRuntime, tod
             status: "ok",
             fetchedAt: r.fetchedAt,
             fromCache: r.fromCache,
+            retrieval: r.retrieval,
+            observedAt: r.observedAt,
             ...(r.searchUrl ? { searchUrl: r.searchUrl } : {}),
             offers: [...r.offers]
               .sort((a, b) => a.total.amountMinor - b.total.amountMinor)

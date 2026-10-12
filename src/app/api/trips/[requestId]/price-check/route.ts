@@ -4,8 +4,9 @@ import { attachGuestCookie, consume, guestFromRequest, refund } from "@/server/g
 import { apiError, readBodyOr413 } from "@/server/http";
 import { priceCheckTrip } from "@/server/pricing";
 import { getPricingRuntime } from "@/server/providers/runtime";
-import { getTrip } from "@/server/store";
-import { reoptimizeTrip } from "@/server/trips";
+import { getTrip, saveTrip } from "@/server/store";
+import { getFxRates } from "@/server/providers/fx";
+import { attachFx, reoptimizeTrip } from "@/server/trips";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -27,7 +28,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ request
       if (!parsed.data.baseRequest) return apiError(404, "request_not_found", `Unknown requestId ${requestId}. Send baseRequest.`, undefined, { guest });
       const replanned = reoptimizeTrip(requestId, {}, parsed.data.baseRequest);
       if (!replanned.ok) return apiError(404, replanned.code, replanned.message, undefined, { guest });
-      prev = replanned.response;
+      prev = { ...replanned.response, requestId, requirementsVersion: parsed.data.baseRequirementsVersion ?? 1 };
     }
   } catch (err) {
     console.error("price check replan failed", err);
@@ -40,7 +41,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ request
   const reservation = allowed.reservation;
 
   try {
-    const result = await priceCheckTrip(prev, pricing);
+    const [checked, fx] = await Promise.all([priceCheckTrip(prev, pricing), getFxRates()]);
+    const result = attachFx(checked, fx);
+    saveTrip(result);
     // Failed provider searches can still consume the provider's search quota.
     if (result.pricing.providerCalls === 0) refund(guest, "priceCheck", reservation);
     return attachGuestCookie(NextResponse.json<TripResponse>(result), guest);

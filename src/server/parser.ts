@@ -20,7 +20,7 @@ export type ParsedRequest = {
   issues: string[];
 };
 
-const MONTHS: Record<string, number> = {
+export const MONTHS: Record<string, number> = {
   january: 1, jan: 1, ocak: 1,
   february: 2, feb: 2, şubat: 2, subat: 2,
   march: 3, mar: 3, mart: 3,
@@ -39,13 +39,13 @@ const MONTH_RE = `(${Object.keys(MONTHS).sort((a, b) => b.length - a.length).joi
 const DASH = `\\s*(?:-|–|—|to|until|through|ile)\\s*`;
 const YEAR = `(?:,?\\s*(\\d{4}))?`;
 
-function iso(year: number, month: number, day: number): string | undefined {
+export function iso(year: number, month: number, day: number): string | undefined {
   const s = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
   return isValidDate(s) ? s : undefined;
 }
 
 /** Pick the year: explicit, else the first year where the date is not in the past. */
-function resolveYear(month: number, day: number, explicit: string | undefined, today: string): number {
+export function resolveYear(month: number, day: number, explicit: string | undefined, today: string): number {
   if (explicit) return Number(explicit);
   const year = Number(today.slice(0, 4));
   const candidate = iso(year, month, day);
@@ -125,7 +125,7 @@ function parseAmount(raw: string, multiplier?: string): number {
   return value * factor;
 }
 
-function findBudget(text: string, issues: string[]): ParsedRequest["budget"] {
+function findBudget(text: string, _issues: string[]): ParsedRequest["budget"] {
   const num = `(\\d[\\d.,\\s]*\\d|\\d)\\s*(k|bin)?`;
   const tryRe = new RegExp(`(?:₺\\s*${num})|(?:${num}\\s*(?:try|tl|₺|lira|turkish lira)\\b)`, "iu");
   const m = tryRe.exec(text);
@@ -134,9 +134,16 @@ function findBudget(text: string, issues: string[]): ParsedRequest["budget"] {
     const amountMinor = Math.round(amount * 100);
     if (Number.isSafeInteger(amountMinor) && amountMinor > 0) return { amountMinor, currency: "TRY" };
   }
-  const foreign = new RegExp(`(?:[$€£]\\s*${num})|(?:${num}\\s*(?:usd|eur|gbp|dollars?|euros?)\\b)`, "iu").exec(text);
-  if (foreign) {
-    issues.push("This demo plans in Turkish lira only. What is your total budget in TRY?");
+  // Foreign-currency budgets are kept in their currency; the trip service converts
+  // them with dated reference rates, or asks for TRY if no rate is available.
+  const foreignRe = new RegExp(`(?:([$€£])\\s*${num})|(?:${num}\\s*(usd|eur|gbp|dollars?|euros?|pounds?)\\b)`, "iu");
+  const f = foreignRe.exec(text);
+  if (f) {
+    const symbol = (f[1] ?? f[6]).toLowerCase();
+    const currency = symbol === "$" || symbol.startsWith("dollar") || symbol === "usd" ? "USD" : symbol === "€" || symbol.startsWith("euro") || symbol === "eur" ? "EUR" : "GBP";
+    const amount = f[1] ? parseAmount(f[2], f[3]) : parseAmount(f[4], f[5]);
+    const amountMinor = Math.round(amount * 100);
+    if (Number.isSafeInteger(amountMinor) && amountMinor > 0) return { amountMinor, currency };
   }
   return undefined;
 }

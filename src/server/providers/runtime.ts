@@ -6,6 +6,7 @@
  *   (free plan: stay under the provider's hourly limit, never pay overage).
  */
 import type { ProviderFailure } from "@/contract/trip";
+import { createReplayProvider, observationsDir, withRecording } from "./observations";
 import { createSerpApiProvider } from "./serpapi";
 import type { FlightOffer, FlightQuery, HotelOffer, HotelQuery, PriceProvider, ProviderResult } from "./types";
 
@@ -33,6 +34,9 @@ export class PricingRuntime {
   constructor(
     private readonly provider: PriceProvider | null,
     private readonly now: () => number = Date.now,
+    /** Unmetered providers (replay) cost nothing: no call budget, no hourly cap, not counted as calls. */
+    private readonly metered = true,
+    private readonly cacheScope = provider?.cacheScope ?? `${provider?.name ?? "off"}|${metered ? "metered" : "replay"}`,
   ) {}
 
   get available(): boolean {
@@ -53,6 +57,7 @@ export class PricingRuntime {
 
   private async run<T>(key: string, budget: CallBudget, fn: (p: PriceProvider) => Promise<ProviderResult<T>>): Promise<ProviderResult<T>> {
     if (!this.provider) return this.fail("not_configured", "Live prices are not configured on this server.");
+    key = `${this.cacheScope}|${key}`;
     const now = this.now();
 
     const hit = state.cache.get(key);
@@ -69,13 +74,14 @@ export class PricingRuntime {
       return r.ok ? { ...r, fromCache: true } : r;
     }
 
-    if (budget.remaining <= 0) return this.fail("quota", "Live price lookups for this request reached their limit.");
-    state.callTimes = state.callTimes.filter((t) => now - t < HOUR_MS);
-    if (state.callTimes.length >= maxCallsPerHour()) return this.fail("quota", "Hourly live price limit reached. Try again later.");
-
-    budget.remaining--;
-    budget.calls++;
-    state.callTimes.push(now);
+    if (this.metered) {
+      if (budget.remaining <= 0) return this.fail("quota", "Live price lookups for this request reached their limit.");
+      state.callTimes = state.callTimes.filter((t) => now - t < HOUR_MS);
+      if (state.callTimes.length >= maxCallsPerHour()) return this.fail("quota", "Hourly live price limit reached. Try again later.");
+      budget.remaining--;
+      budget.calls++;
+      state.callTimes.push(now);
+    }
     const job = fn(this.provider)
       .then((r) => {
         // Cache successes and genuine "no results"; retry everything else next time.
@@ -88,10 +94,23 @@ export class PricingRuntime {
   }
 }
 
-/** Live pricing for this process, or an unavailable runtime when SERPAPI_API_KEY is unset. */
+export type PriceMode = "live" | "record" | "replay" | "off";
+
+/** PRICE_MODE: live (default), record (live + save results), replay (saved results only). */
+export function priceMode(): PriceMode {
+  const mode = (process.env.PRICE_MODE ?? "live").trim().toLowerCase();
+  if (mode === "replay") return "replay";
+  if (!process.env.SERPAPI_API_KEY) return "off";
+  return mode === "record" ? "record" : mode === "live" ? "live" : "off";
+}
+
+/** Pricing runtime for this process; unavailable when live pricing has no key and replay is off. */
 export function getPricingRuntime(): PricingRuntime {
-  const key = process.env.SERPAPI_API_KEY;
-  return new PricingRuntime(key ? createSerpApiProvider(key) : null);
+  const mode = priceMode();
+  if (mode === "replay") return new PricingRuntime(createReplayProvider(), Date.now, false, `replay|${observationsDir()}`);
+  if (mode === "off") return new PricingRuntime(null);
+  const live = createSerpApiProvider(process.env.SERPAPI_API_KEY!);
+  return new PricingRuntime(mode === "record" ? withRecording(live) : live, Date.now, true, `${mode}|${mode === "record" ? observationsDir() : ""}`);
 }
 
 /** Test helper. */
@@ -113,4 +132,15 @@ export async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T) =>
   };
   await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
   return out;
+}
+
+/**
+ * Reserve one slot of the shared hourly SerpApi ceiling for a non-price call
+ * (e.g. Google Events), so all SerpApi usage stays under one cap.
+ */
+export function takeHourlySerpApiSlot(now = Date.now()): boolean {
+  state.callTimes = state.callTimes.filter((t) => now - t < HOUR_MS);
+  if (state.callTimes.length >= maxCallsPerHour()) return false;
+  state.callTimes.push(now);
+  return true;
 }

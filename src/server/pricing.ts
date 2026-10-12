@@ -5,7 +5,7 @@
  * Lines without a usable provider price keep their estimate, visibly.
  */
 import type { Leg, PricingSummary, RouteOption, Stay, TripResponse } from "@/contract/trip";
-import { cityInfo } from "./estimates";
+import { cityInfo, heuristicEstimator } from "./estimates";
 import { formatShort } from "./dates";
 import { formatMoney } from "./money";
 import { evaluateCandidate, specFromOption, type Candidate } from "./planner";
@@ -86,7 +86,8 @@ export async function priceCheckTrip(prev: TripResponse, runtime: PricingRuntime
     const legs = o.legs.map((leg): Leg => {
       total++;
       const r = byKey.get(flightKey(leg)) as ProviderResult<FlightOffer> | undefined;
-      const base: Leg = { ...leg, estimateSource: leg.estimateSource === "provider" ? "heuristic" : leg.estimateSource, source: undefined };
+      const estimate = heuristicEstimator.flight(cityInfo(leg.fromCity), cityInfo(leg.toCity), leg.departureDate);
+      const base: Leg = leg.estimateSource === "provider" ? { ...estimate, arrivalDate: leg.arrivalDate } : { ...leg, source: undefined };
       if (!r || !r.ok) {
         if (r) failureNotes.add(r.message);
         return base;
@@ -103,14 +104,16 @@ export async function priceCheckTrip(prev: TripResponse, runtime: PricingRuntime
         stops: offer.stops,
         estimatedCost: offer.price,
         estimateSource: "provider",
-        source: { provider: "serpapi", product: "google_flights", fetchedAt: r.fetchedAt, fromCache: r.fromCache, description: offer.description, ...(r.searchUrl ? { searchUrl: r.searchUrl } : {}) },
+        source: { provider: "serpapi", product: "google_flights", fetchedAt: r.fetchedAt, fromCache: r.fromCache, retrieval: r.retrieval, observedAt: r.observedAt, description: offer.description, ...(r.searchUrl ? { searchUrl: r.searchUrl } : {}) },
       };
     });
 
     const stays = o.stays.map((stay): Stay => {
       total++;
       const r = byKey.get(hotelKey(stay)) as ProviderResult<HotelOffer> | undefined;
-      const base: Stay = { ...stay, estimateSource: stay.estimateSource === "provider" ? "mock" : stay.estimateSource, source: undefined };
+      const base: Stay = stay.estimateSource === "provider"
+        ? heuristicEstimator.stay(cityInfo(stay.city), stay.checkIn, stay.checkOut, stay.style)
+        : { ...stay, source: undefined };
       if (!r || !r.ok) {
         if (r) failureNotes.add(r.message);
         return base;
@@ -128,6 +131,8 @@ export async function priceCheckTrip(prev: TripResponse, runtime: PricingRuntime
           product: "google_hotels",
           fetchedAt: r.fetchedAt,
           fromCache: r.fromCache,
+          retrieval: r.retrieval,
+          observedAt: r.observedAt,
           description: `${offer.name}${offer.hotelClass ? ` (${offer.hotelClass}★)` : ""} · ${formatMoney(offer.total)} for ${stay.nights} night${stay.nights === 1 ? "" : "s"}`,
           ...(r.searchUrl ? { searchUrl: r.searchUrl } : {}),
           ...(notes ? { notes } : {}),
@@ -138,12 +143,19 @@ export async function priceCheckTrip(prev: TripResponse, runtime: PricingRuntime
     return evaluateCandidate(req, specFromOption(o, req), o.citySequence, legs, stays, undefined, warnings);
   });
 
+  const replayTimes = [...byKey.values()]
+    .flatMap((r) => (r.ok && r.retrieval === "replay" ? [r.observedAt] : []))
+    .sort();
   const pricing: PricingSummary = {
     mode: priced === 0 ? "estimates" : priced === total ? "provider" : "mixed",
     checkedAt: new Date().toISOString(),
     providerCalls: budget.calls,
     cacheHits: budget.cacheHits,
+    ...(replayTimes.length ? { retrieval: "replay" as const } : priced > 0 ? { retrieval: "live" as const } : {}),
     notes: [
+      ...(replayTimes.length
+        ? [`Recorded observations, not current prices: provider results saved between ${replayTimes[0].slice(0, 10)} and ${replayTimes[replayTimes.length - 1].slice(0, 10)} and replayed without a live search.`]
+        : []),
       `${priced} of ${total} flight and hotel lines use provider prices (Google Flights / Google Hotels via SerpApi; 1 adult, economy one-way, 1 room, TRY). Provider results may be cached upstream; they are search results, not bookable quotes.`,
       "Food, local transport and the contingency are always estimates, so totals are never fully live.",
       ...failureNotes,

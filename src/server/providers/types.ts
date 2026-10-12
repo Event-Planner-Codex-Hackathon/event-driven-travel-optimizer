@@ -30,6 +30,10 @@ export type ProviderSuccess<T> = {
   offers: T[];
   fetchedAt: string;
   fromCache: boolean;
+  /** "replay" results come from recorded observations, never from a live call. */
+  retrieval: "live" | "replay";
+  /** When the provider produced the result (original time for replays). */
+  observedAt: string;
   /** Public search page; never contains credentials. */
   searchUrl?: string;
 };
@@ -40,6 +44,8 @@ export type ProviderResult<T> = ProviderSuccess<T> | ProviderError;
 
 export interface PriceProvider {
   readonly name: string;
+  /** Cache isolation for wrappers/modes; contains no credentials. */
+  readonly cacheScope?: string;
   flights(q: FlightQuery): Promise<ProviderResult<FlightOffer>>;
   hotels(q: HotelQuery): Promise<ProviderResult<HotelOffer>>;
 }

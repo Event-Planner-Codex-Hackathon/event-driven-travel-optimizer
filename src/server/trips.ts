@@ -5,6 +5,7 @@
 import { randomUUID } from "node:crypto";
 import {
   CONTRACT_VERSION,
+  type FxInfo,
   type NormalizedRequest,
   type PricingSummary,
   type RequestOverrides,
@@ -16,6 +17,8 @@ import { addDays, formatShort, isValidDate, todayLocal } from "./dates";
 import { formatMoney } from "./money";
 import { parseRequestText, type ParsedRequest } from "./parser";
 import { compareCandidates, explain, plan, type Candidate } from "./planner";
+import { withComparisons } from "./comparison";
+import { FX_QUOTES } from "./providers/fx";
 import { getTrip, saveTrip } from "./store";
 
 const SUPPORTED = CITIES.map((c) => c.city).join(", ");
@@ -64,8 +67,30 @@ function applyOverrides(d: Draft, o: RequestOverrides | undefined): Draft {
 }
 
 /** Validate a draft. Returns either a complete request or clarification questions. */
-function finalize(d: Draft, issues: string[], assumptions: string[]): { request: NormalizedRequest | null; questions: string[] } {
+/** Convert a foreign-currency budget to TRY with dated reference rates, recording the conversion. */
+function budgetInTry(budget: Draft["budget"], fx: FxInfo | null | undefined, assumptions: string[], questions: string[]): Draft["budget"] {
+  if (!budget || budget.currency === "TRY") return budget;
+  if (!(FX_QUOTES as readonly string[]).includes(budget.currency)) {
+    questions.push("Budgets can be given in TRY, EUR, USD or GBP. What is your total budget in TRY?");
+    return undefined;
+  }
+  const rate = fx?.rates[budget.currency];
+  if (!rate) {
+    questions.push(`We couldn't get a ${budget.currency} exchange rate right now. What is your total budget in TRY?`);
+    return undefined;
+  }
+  const amountMinor = Math.round(budget.amountMinor / rate);
+  if (!Number.isSafeInteger(amountMinor) || amountMinor <= 0) return budget;
+  const converted = { amountMinor, currency: "TRY" };
+  assumptions.push(
+    `Budget of ${formatMoney(budget)} converted to ${formatMoney(converted)} at 1 TRY = ${rate} ${budget.currency} (Frankfurter reference rate, ${fx!.date}).`,
+  );
+  return converted;
+}
+
+function finalize(d: Draft, issues: string[], assumptions: string[], fx?: FxInfo | null): { request: NormalizedRequest | null; questions: string[] } {
   const questions = [...issues];
+  d = { ...d, budget: budgetInTry(d.budget, fx, assumptions, questions) };
   const origin = d.origin ? findCity(d.origin) : undefined;
   const eventCity = d.event.city ? findCity(d.event.city) : undefined;
 
@@ -76,7 +101,7 @@ function finalize(d: Draft, issues: string[], assumptions: string[]): { request:
   if (!d.event.startDate || !d.event.endDate) questions.push("What are the event's first and last days (e.g. October 27–29)?");
   else if (!isValidDate(d.event.startDate) || !isValidDate(d.event.endDate) || d.event.endDate < d.event.startDate)
     questions.push("The event dates look invalid. What are the first and last event days?");
-  if (!d.budget && !issues.some((i) => i.includes("TRY"))) questions.push("What is your total budget in TRY?");
+  if (!d.budget && !questions.some((i) => i.includes("TRY"))) questions.push("What is your total budget in TRY?");
   else if (d.budget && (d.budget.currency !== "TRY" || !Number.isSafeInteger(d.budget.amountMinor) || d.budget.amountMinor <= 0))
     questions.push("This demo accepts positive budgets in TRY only. What is your total budget in TRY?");
   if (origin && eventCity && origin.city === eventCity.city) questions.push("The event is in your departure city. Where are you travelling from?");
@@ -129,6 +154,9 @@ const PRICING_ASSUMPTION: Record<PricingSummary["mode"], string> = {
   provider: "Flights and stays are search results from Google Flights / Google Hotels; food, local transport and contingency are estimates. Not bookable quotes.",
 };
 
+const REPLAY_ASSUMPTION =
+  "Replay mode: provider-priced lines are recorded observations shown with their original date — not current prices.";
+
 function globalAssumptions(req: NormalizedRequest, mode: PricingSummary["mode"] = "estimates"): string[] {
   return [
     PRICING_ASSUMPTION[mode],
@@ -162,7 +190,7 @@ function responseBase(meta: ResponseMeta) {
 /** Assumptions specific to this request (parser notes, defaults), without global or budget-status lines. */
 export function requestAssumptions(trip: TripResponse): string[] {
   if (!trip.normalizedRequest) return [];
-  const global = new Set([...Object.values(PRICING_ASSUMPTION), ...globalAssumptions(trip.normalizedRequest)]);
+  const global = new Set([...Object.values(PRICING_ASSUMPTION), REPLAY_ASSUMPTION, ...globalAssumptions(trip.normalizedRequest)]);
   return trip.assumptions.filter((a) => !global.has(a) && !a.startsWith("No option fits"));
 }
 
@@ -178,14 +206,16 @@ export function assembleReadyResponse(
   const ranked = [...candidates].sort(compareCandidates);
   const labels = ["A", "B", "C"] as const;
   const best = ranked[0];
-  const options: RouteOption[] = ranked.map((c, i) => {
+  const ranked3: RouteOption[] = ranked.map((c, i) => {
     const { summary, highlights } = explain(c, best, request);
     const { family: _f, spec: _s, travelMinutes: _t, ...rest } = c;
     return { ...rest, id: `${base.requestId}-${labels[i]}`, label: labels[i], summary, highlights };
   });
-  const recommended = options.find((o) => o.feasibility.feasible);
+  const recommended = ranked3.find((o) => o.feasibility.feasible);
+  const options = withComparisons(ranked3, recommended?.id ?? null);
 
-  const allAssumptions = Array.from(new Set([...globalAssumptions(request, pricing.mode), ...assumptions]));
+  const pricingLine = pricing.retrieval === "replay" ? [REPLAY_ASSUMPTION] : [];
+  const allAssumptions = Array.from(new Set([...pricingLine, ...globalAssumptions(request, pricing.mode), ...assumptions]));
   if (!recommended) {
     const cheapest = [...options].sort((a, b) => a.costBreakdown.total.amountMinor - b.costBreakdown.total.amountMinor)[0];
     allAssumptions.push(
@@ -234,33 +264,59 @@ function buildResponse(
   return assembleReadyResponse(request, chosen, assumptions, meta, ESTIMATES_ONLY);
 }
 
-export function optimizeTrip(input: { text?: string; overrides?: RequestOverrides }, today: string = todayLocal()): TripResponse {
+/** Add display-only converted totals and the rates used. No-op without rates. */
+export function attachFx(response: TripResponse, fx: FxInfo | null | undefined): TripResponse {
+  if (!fx) return response;
+  return {
+    ...response,
+    fx,
+    options: response.options.map((o) => ({
+      ...o,
+      convertedTotals: Object.entries(fx.rates).map(([currency, rate]) => ({
+        amountMinor: Math.round(o.costBreakdown.total.amountMinor * rate),
+        currency,
+      })),
+    })),
+  };
+}
+
+export function optimizeTrip(
+  input: { text?: string; overrides?: RequestOverrides },
+  today: string = todayLocal(),
+  fx?: FxInfo | null,
+): TripResponse {
   const parsed = input.text?.trim()
     ? parseRequestText(input.text, today)
     : { optionalCities: [], preferences: {}, assumptions: [], issues: [], event: {} } as ParsedRequest;
   const draft = applyOverrides(draftFromParsed(parsed), input.overrides);
   const assumptions = [...parsed.assumptions];
-  const { request, questions } = finalize(draft, parsed.issues, assumptions);
-  const response = buildResponse(request, questions, assumptions, { requirementsVersion: 1 });
+  const { request, questions } = finalize(draft, parsed.issues, assumptions, fx);
+  const response = attachFx(buildResponse(request, questions, assumptions, { requirementsVersion: 1 }), fx);
   saveTrip(response);
   return response;
 }
 
-export type ReoptimizeResult = { ok: true; response: TripResponse } | { ok: false; code: "request_not_found"; message: string };
+export type ReoptimizeResult = { ok: true; response: TripResponse } | { ok: false; code: "request_not_found" | "invalid_body"; message: string };
 
-export function reoptimizeTrip(requestId: string, changes: RequestOverrides, baseRequest?: NormalizedRequest): ReoptimizeResult {
+export function reoptimizeTrip(requestId: string, changes: RequestOverrides, baseRequest?: NormalizedRequest, fx?: FxInfo | null, baseRequirementsVersion = 1): ReoptimizeResult {
   const previous = getTrip(requestId);
   const prevRequest = previous?.normalizedRequest ?? baseRequest;
   if (!prevRequest) {
     return { ok: false, code: "request_not_found", message: `Unknown requestId ${requestId}. Send baseRequest or call /api/trips/optimize again.` };
   }
+  if (changes.event && Object.entries(changes.event).some(([key, value]) => value !== undefined && value !== prevRequest.event[key as keyof typeof changes.event])) {
+    return { ok: false, code: "invalid_body", message: "The event is locked. Start a new trip to choose a different event, city or event dates." };
+  }
   const draft = applyOverrides(draftFromRequest(prevRequest), changes);
-  const assumptions: string[] = [];
-  const { request, questions } = finalize(draft, [], assumptions);
-  const response = buildResponse(request, questions, assumptions, {
-    requirementsVersion: (previous?.requirementsVersion ?? 1) + 1,
-    previousRequestId: requestId,
-  });
+  const assumptions = !changes.budget && previous ? requestAssumptions(previous).filter((a) => a.startsWith("Budget of ")) : [];
+  const { request, questions } = finalize(draft, [], assumptions, fx);
+  const response = attachFx(
+    buildResponse(request, questions, assumptions, {
+      requirementsVersion: (previous?.requirementsVersion ?? baseRequirementsVersion) + 1,
+      previousRequestId: requestId,
+    }),
+    fx,
+  );
   saveTrip(response);
   return { ok: true, response };
 }
