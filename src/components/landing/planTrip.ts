@@ -42,7 +42,13 @@ export function toOverrides(draft: TripDraft): RequestOverrides {
   };
 }
 
-function summarize(option: RouteOption, recommendedId: string | null): RouteSummary {
+// The first planner highlight that not every route shares, so each row says what sets it apart.
+function distinctHighlight(option: RouteOption, all: RouteOption[]): string | null {
+  const others = all.filter((other) => other.id !== option.id);
+  return option.highlights.find((line) => !others.every((other) => other.highlights.includes(line))) ?? null;
+}
+
+function summarize(option: RouteOption, all: RouteOption[], recommendedId: string | null): RouteSummary {
   const { total, budget, remaining } = option.costBreakdown;
   const within = option.feasibility.withinBudget;
   const gap = formatMoney({ ...remaining, amountMinor: Math.abs(remaining.amountMinor) });
@@ -56,7 +62,7 @@ function summarize(option: RouteOption, recommendedId: string | null): RouteSumm
     withinBudget: within,
     recommended: option.id === recommendedId,
     difference: within ? `${gap} under budget` : `${gap} over budget`,
-    highlight: option.highlights[0] ?? null,
+    highlight: distinctHighlight(option, all),
   };
 }
 
@@ -70,7 +76,9 @@ export async function planTrip(draft: TripDraft, signal?: AbortSignal): Promise<
         message: response.clarificationQuestions[0] ?? "We need a little more detail before we can compare routes.",
       };
     }
-    const routes = response.options.map((option) => summarize(option, response.recommendedOptionId));
+    const routes = response.options.map((option) =>
+      summarize(option, response.options, response.recommendedOptionId),
+    );
     const message = response.recommendedOptionId
       ? `${routes.length} routes compared. All prices are estimates.`
       : `${routes.length} routes compared, but none fits your budget. All prices are estimates.`;

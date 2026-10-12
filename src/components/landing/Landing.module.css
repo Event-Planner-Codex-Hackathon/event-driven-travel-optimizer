@@ -584,6 +584,17 @@
   }
 }
 
+/* The step bar belongs to the story; it leaves once the track scrolls away. */
+.steps {
+  transition: opacity 0.3s var(--ease-out), visibility 0s linear 0s;
+}
+
+.stage[data-ended] .steps {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s var(--ease-out), visibility 0s linear 0.2s;
+}
+
 .stepButton {
   appearance: none;
   display: grid;

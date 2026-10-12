@@ -48,6 +48,7 @@ export function Landing() {
   const captionsRef = useRef<HTMLDivElement>(null);
   const [step, setStep] = useState(0);
   const [stacked, setStacked] = useState(false);
+  const [ended, setEnded] = useState(false);
 
   // Map scroll position inside the story track to a board state.
   useEffect(() => {
@@ -70,6 +71,7 @@ export function Landing() {
         return;
       }
       const rect = track.getBoundingClientRect();
+      setEnded(rect.bottom < window.innerHeight - 1);
       const travel = rect.height - window.innerHeight;
       const progress = travel > 0 ? Math.min(1, Math.max(0, -rect.top / travel)) : 0;
       setStep(Math.min(STEPS.length - 1, Math.floor(progress * STEPS.length)));
@@ -142,7 +144,13 @@ export function Landing() {
           className={styles.track}
           style={{ "--steps": STEPS.length } as React.CSSProperties}
         >
-          <section ref={stageRef} className={styles.stage} aria-labelledby="hero-title" data-step={current.id}>
+          <section
+            ref={stageRef}
+            className={styles.stage}
+            aria-labelledby="hero-title"
+            data-step={current.id}
+            data-ended={ended || undefined}
+          >
             <h1 id="hero-title" className="visually-hidden">
               EventHopper: your event is fixed, your budget is fixed, the route can move.
             </h1>
