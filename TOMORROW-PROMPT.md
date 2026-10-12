@@ -1,0 +1,19 @@
+# First implementation prompt for October 12
+
+Paste the following only after the organizer opens hacking at 09:30 Europe/Istanbul on October 12, 2026.
+
+```text
+The hackathon has officially started. I now authorize application implementation from scratch in this workspace. Read AGENTS.md and PREPARATION.md, then build the smallest working event-driven travel optimizer. Follow the six-hour plan and preserve a 15:30–16:00 submission buffer.
+
+Use one Next.js TypeScript application with React, server route handlers, Zod, and timezone-aware date handling. Use a deterministic engine for routes, event feasibility, hotel nights, integer-money totals, ranking, and comparison deltas. Use AI only for schema-validated input interpretation and explanations grounded in computed results. No database, accounts, maps, payments, bookings, or autonomous agent framework.
+
+First initialize the repository and application, protect secrets with .gitignore, create a value-free .env.example, and run the app. Inspect credential presence without revealing values. Use SerpApi flight/hotel adapters only within a verified free allowance; do not enable paid plans or paid overages. Make one flight and one hotel smoke query for the demo if free credentials are available. Runtime OpenAI calls need confirmed API credits or a separately authorized spend limit; my Codex login is not proof of runtime funding. If access is missing, continue the form, contracts, optimizer, and UI while clearly reporting the dependency. Never fabricate real inventory or prices.
+
+The first demo supports one adult, one room, economy travel, one fixed event, and at most one optional city. Confirm these assumptions in the UI. Demo input: depart Istanbul around October 21, 2026; arrive back by November 1; attend SWITCH in Singapore October 27–29; optionally visit Bangkok or Taipei; budget 100,000 TRY. Treat October 20–22 as a proposed departure window. Protect all three event days, require Singapore arrival by October 26, and no onward departure before October 30. Show those buffers as assumptions. Use the official SWITCH URL from the preparation document.
+
+Implement the bounded route search and call budgets in PREPARATION.md. Every candidate must satisfy timezone-aware chronology, the return-arrival deadline, event attendance, hotel-night coverage, and hard preferences. Unknown required costs prevent a verified under-budget claim. Keep live observations, cached observations, estimates, and sandbox data distinct, with original timestamps and price scope. Do not claim a global optimum or a fully live total when any component is estimated or stale. Use only provider-returned public links; label search links accurately.
+
+Deliver a single page with editable requirements, a locked event card, up to three itinerary alternatives, a local-date timeline, itemized costs, source/freshness labels, and Bangkok/Taipei replacement with recalculation and numeric deltas. Keep a manual form and deterministic explanation fallback. Never silently substitute test data for provider results. Synthetic inputs are allowed only in isolated tests; labelled replay data must come from actual permitted observations captured during the event.
+
+Prioritize a working form-to-results path by 11:30. Test event protection, overnight flights, return deadlines, hotel nights, totals, unknown costs, cache provenance, and replacement invalidation. Then add funded AI interpretation/explanation, handle provider failures, verify the production build, and rehearse a two-minute demo. Freeze features at 14:30. Record event-day progress accurately and finish with setup instructions, limitations, and submission-ready artifacts. Start now without additional architecture discussion; ask only for a genuinely blocking missing input while continuing independent work.
+```

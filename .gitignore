@@ -1,0 +1,7 @@
+
+# Keep local credentials out of Git
+.env
+.env.*
+!.env.example
+
+.DS_Store
