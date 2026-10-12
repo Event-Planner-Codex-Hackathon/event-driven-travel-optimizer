@@ -1,15 +1,12 @@
-// Placeholder home page — the product UI is owned by the frontend track and replaces this file.
-import Link from "next/link";
+import type { Metadata } from "next";
+import { Landing } from "@/components/landing/Landing";
+
+export const metadata: Metadata = {
+  title: "EventHopper — plan around the dates you can't move",
+  description:
+    "EventHopper compares trip routes around a fixed event and a fixed budget, and labels where every price came from.",
+};
 
 export default function Home() {
-  return (
-    <main style={{ maxWidth: 640, margin: "64px auto", padding: "0 16px", lineHeight: 1.5 }}>
-      <h1 style={{ marginBottom: 4 }}>EventHopper</h1>
-      <p>Plan a trip around an event whose dates cannot move.</p>
-      <p>
-        The product UI is in progress. The backend can be exercised from the{" "}
-        <Link href="/dev">developer console</Link>.
-      </p>
-    </main>
-  );
+  return <Landing />;
 }
