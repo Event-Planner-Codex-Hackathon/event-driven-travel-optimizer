@@ -2,20 +2,11 @@
 
 import { useId, type Ref } from "react";
 import type { RouteOption, TripResponse } from "@/contract/trip";
-import { formatDuration, formatMoney, formatWeekday } from "@/lib/format";
-import { ArrowDown, Lock, Plane } from "../landing/Icons";
+import { formatMoney } from "@/lib/format";
+import { ArrowDown } from "../landing/Icons";
 import site from "../site/site.module.css";
 import styles from "./trip.module.css";
-import {
-  MODE_LABEL,
-  SOURCE_LABEL,
-  STYLE_LABEL,
-  absMoney,
-  cityPath,
-  shortRange,
-  stopsLabel,
-  timeline,
-} from "./tripFormat";
+import { absMoney, cityPath } from "./tripFormat";
 
 function Estimate() {
   return <span className={site.estimateTag}>estimate</span>;
@@ -104,113 +95,6 @@ export function FeaturedRoute({ option, recommended, signedIn, headingRef }: Fea
           {signedIn ? "Search links for this route" : "Sign in to see search links for this route"}
           <ArrowDown className={styles.jumpIcon} />
         </a>
-      </p>
-    </section>
-  );
-}
-
-export function Itinerary({ option }: { option: RouteOption }) {
-  const id = useId();
-  const event = option.event;
-  const eventDays = shortRange(event.startDate, event.endDate);
-  const stopovers = new Set(
-    option.citySequence.filter((stop) => stop.purpose === "stopover").map((stop) => stop.city),
-  );
-
-  return (
-    <section className={styles.itinerary} aria-labelledby={`${id}-title`}>
-      <h2 id={`${id}-title`} className={`${site.sectionTitle} ${styles.onSky}`}>
-        Itinerary
-      </h2>
-      <ol className={styles.timeline}>
-        {timeline(option).map((item, index) => {
-          if (item.kind === "leg") {
-            const { leg } = item;
-            const meta = [MODE_LABEL[leg.mode], formatDuration(leg.durationMinutes), stopsLabel(leg.stops)]
-              .filter(Boolean)
-              .join(" · ");
-            return (
-              <li key={`leg-${index}`} className={styles.item}>
-                <span className={styles.itemMark} aria-hidden="true">
-                  <Plane className={styles.planeIcon} />
-                </span>
-                <p className={styles.itemWhen}>
-                  <time dateTime={leg.departureDate}>{formatWeekday(leg.departureDate)}</time>
-                  {leg.arrivalDate !== leg.departureDate ? (
-                    <span className={styles.itemArrive}>
-                      arrives <time dateTime={leg.arrivalDate}>{formatWeekday(leg.arrivalDate)}</time>
-                    </span>
-                  ) : (
-                    <span className={styles.itemArrive}>arrives same day</span>
-                  )}
-                </p>
-                <div className={styles.itemMain}>
-                  <h3 className={styles.itemTitle}>
-                    {leg.fromCity} → {leg.toCity}
-                  </h3>
-                  <p className={styles.itemMeta}>{meta}</p>
-                </div>
-                <p className={styles.itemCost}>
-                  <span className={styles.itemAmount}>{formatMoney(leg.estimatedCost)}</span>
-                  <span className={styles.itemSource}>
-                    <Estimate /> {SOURCE_LABEL[leg.estimateSource]}
-                  </span>
-                </p>
-              </li>
-            );
-          }
-
-          const { stay } = item;
-          const isEvent = stay.city === event.city;
-          const isStop = !isEvent && stopovers.has(stay.city);
-          return (
-            <li key={`stay-${index}`} className={styles.item} data-event={isEvent || undefined}>
-              <span className={styles.itemMark}>
-                <span
-                  className={site.lamp}
-                  data-status={isEvent ? "fixed" : isStop ? "swap" : undefined}
-                  aria-hidden="true"
-                />
-              </span>
-              <p className={styles.itemWhen}>
-                <time dateTime={stay.checkIn}>{formatWeekday(stay.checkIn)}</time>
-                <span className={styles.itemArrive}>
-                  check out <time dateTime={stay.checkOut}>{formatWeekday(stay.checkOut)}</time>
-                </span>
-              </p>
-              <div className={styles.itemMain}>
-                <h3 className={styles.itemTitle}>Stay in {stay.city}</h3>
-                <p className={styles.itemMeta}>
-                  {stay.nights} {stay.nights === 1 ? "night" : "nights"} · {STYLE_LABEL[stay.style]}
-                </p>
-                {isEvent ? (
-                  <p className={styles.itemFixed}>
-                    <Lock className={styles.lockIcon} />
-                    Event days {eventDays} are fixed
-                  </p>
-                ) : isStop ? (
-                  <p className={styles.itemSwap}>Optional stop · you can swap it</p>
-                ) : null}
-              </div>
-              <p className={styles.itemCost}>
-                <span className={styles.itemAmount}>{formatMoney(stay.estimatedCost)}</span>
-                <span className={styles.itemSource}>
-                  <Estimate /> {SOURCE_LABEL[stay.estimateSource]}
-                </span>
-              </p>
-            </li>
-          );
-        })}
-      </ol>
-      <p className={styles.legend}>
-        <span>
-          <span className={site.lamp} data-status="fixed" aria-hidden="true" /> Fixed event days
-        </span>
-        {stopovers.size ? (
-          <span>
-            <span className={site.lamp} data-status="swap" aria-hidden="true" /> Swappable stop
-          </span>
-        ) : null}
       </p>
     </section>
   );

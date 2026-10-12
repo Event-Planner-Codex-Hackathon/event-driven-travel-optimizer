@@ -13,7 +13,9 @@ import { SiteShell, usePrefersReducedMotion } from "../site/SiteShell";
 import site from "../site/site.module.css";
 import { ChangeStop } from "./ChangeStop";
 import { OtherOptions } from "./OtherOptions";
-import { CostBreakdown, FeaturedRoute, Itinerary } from "./RouteDetail";
+import { enrichmentOf, syntheticEnrichment } from "./dayPlan";
+import { DayPlan } from "./DayPlanView";
+import { CostBreakdown, FeaturedRoute } from "./RouteDetail";
 import { SearchLinks } from "./SearchLinks";
 import styles from "./trip.module.css";
 import { defaultOption, formatCompared, hasSyntheticPrices, pickFeatured } from "./tripFormat";
@@ -44,7 +46,13 @@ function TripContent({ id }: { id: string }) {
   if (trip.status !== "ready" || !trip.normalizedRequest || trip.options.length === 0) {
     return <TripNeedsInput trip={trip} />;
   }
-  return <TripReady trip={trip} optionParam={searchParams.get("option")} />;
+  return (
+    <TripReady
+      trip={trip}
+      optionParam={searchParams.get("option")}
+      preview={searchParams.get("preview") === "synthetic"}
+    />
+  );
 }
 
 function TripPending() {
@@ -105,8 +113,12 @@ function TripNeedsInput({ trip }: { trip: TripResponse }) {
   );
 }
 
-function TripReady({ trip, optionParam }: { trip: TripResponse; optionParam: string | null }) {
+type ReadyProps = { trip: TripResponse; optionParam: string | null; preview: boolean };
+
+function TripReady({ trip, optionParam, preview }: ReadyProps) {
   const featured = pickFeatured(trip, optionParam)!;
+  // Synthetic sample data only with an explicit ?preview=synthetic; never as a fallback.
+  const enrichment = preview ? syntheticEnrichment(featured) : enrichmentOf(featured);
   const request = trip.normalizedRequest!;
   const session = useSession();
   const reducedMotion = usePrefersReducedMotion();
@@ -164,7 +176,7 @@ function TripReady({ trip, optionParam }: { trip: TripResponse; optionParam: str
             signedIn={Boolean(session)}
             headingRef={featuredHeading}
           />
-          <Itinerary option={featured} />
+          <DayPlan option={featured} enrichment={enrichment} />
           <CostBreakdown trip={trip} option={featured} />
         </div>
         <div className={styles.asideCol}>
