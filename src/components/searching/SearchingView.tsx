@@ -13,6 +13,7 @@ import type { OptimizeBody } from "@/contract/trip";
 import { useHydrated } from "@/lib/browserStore";
 import { formatDay, formatMoney, formatRange } from "@/lib/format";
 import { clearPendingSearch, saveTripResponse, takePendingSearch, type PendingSearch } from "@/lib/trips";
+import { saveTripBrief } from "@/lib/tripBrief";
 import styles from "./searching.module.css";
 
 // One board row per thing the planner really does. Nothing here is a live search.
@@ -251,6 +252,7 @@ function Searching() {
 
         if (response.status === "ready") {
           saveTripResponse(response);
+          saveTripBrief(response.requestId, search.brief ?? { description: search.body.text ?? "" });
           const href = `/trips/${encodeURIComponent(response.requestId)}`;
           router.prefetch(href);
           if (!(await holdUntil(MIN_BOARD_MS))) return;

@@ -1,5 +1,6 @@
 "use client";
 
+import type { TripBrief } from "./tripBrief";
 import type { OptimizeBody, TripResponse } from "@/contract/trip";
 import { readStore, useStoredValue, writeStore } from "./browserStore";
 
@@ -11,6 +12,7 @@ export type PendingSearch = {
   /** Short human label for the loading board, e.g. "ISTANBUL → SINGAPORE". */
   label: string;
   createdAt: string;
+  brief?: TripBrief;
 };
 
 const PENDING_KEY = "eh:pending-search";

@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { ApiRequestError, reoptimizeTrip } from "@/contract/client";
 import type { NormalizedRequest, RouteOption, TripResponse } from "@/contract/trip";
+import { carryTripBrief } from "@/lib/tripBrief";
 import { saveTripResponse } from "@/lib/trips";
 import { ArrowRight, Lock } from "../landing/Icons";
 import site from "../site/site.module.css";
@@ -70,6 +71,7 @@ export function ChangeStop({ trip, request, featured }: Props) {
       }
       versionRef.current = next.requirementsVersion;
       saveTripResponse(next);
+      carryTripBrief(trip.requestId, next.requestId);
       startTransition(() => router.push(`/trips/${encodeURIComponent(next.requestId)}`));
     } catch (err) {
       if ((err as Error).name === "AbortError") return;

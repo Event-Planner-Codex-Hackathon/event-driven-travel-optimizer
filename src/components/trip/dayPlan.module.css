@@ -466,6 +466,12 @@
   overflow-wrap: anywhere;
 }
 
+.eventMatch { margin-top: .7rem; padding-left: .7rem; border-left: 2px solid var(--signal); font-size: var(--step--1); }
+.eventMatch p { margin: .25rem 0; }
+.eventMatch strong { color: var(--signal); }
+.eventMatch ul { display: flex; flex-wrap: wrap; gap: .3rem; list-style: none; padding: 0; margin: .5rem 0 0; }
+.eventMatch li { padding: .15rem .4rem; border: 1px solid var(--graphite-line); border-radius: var(--radius-small); color: var(--glyph-muted); }
+
 .gate {
   display: flex;
   align-items: center;

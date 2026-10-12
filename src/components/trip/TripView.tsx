@@ -12,6 +12,8 @@ import { ArrowRight, Lock } from "../landing/Icons";
 import { SiteShell, usePrefersReducedMotion } from "../site/SiteShell";
 import site from "../site/site.module.css";
 import { ChangeStop } from "./ChangeStop";
+import { TripBriefView } from "./TripBriefView";
+import { TripPoster } from "./TripPoster";
 import { OtherOptions } from "./OtherOptions";
 import { enrichmentOf, syntheticEnrichment } from "./dayPlan";
 import { DayPlan } from "./DayPlanView";
@@ -125,7 +127,6 @@ function TripReady({ trip, optionParam, preview }: ReadyProps) {
   const featuredHeading = useRef<HTMLHeadingElement>(null);
   const shownId = useRef(featured.id);
   const event = featured.event;
-  const others = trip.options.filter((o) => o.id !== featured.id);
 
   // When another route is chosen, bring it into view and move focus to its heading.
   useEffect(() => {
@@ -166,8 +167,10 @@ function TripReady({ trip, optionParam, preview }: ReadyProps) {
         </p>
         {hasSyntheticPrices(trip) ? <p className={styles.synthetic}>Demo data — synthetic, not live offers</p> : null}
         <ChangeSummary trip={trip} />
+        <TripBriefView requestId={trip.requestId} request={request} />
       </div>
 
+      <OtherOptions requestId={trip.requestId} options={trip.options} selectedId={featured.id} recommendedId={trip.recommendedOptionId} preview={preview} />
       <div className={styles.layout}>
         <div className={styles.mainCol}>
           <FeaturedRoute
@@ -176,12 +179,12 @@ function TripReady({ trip, optionParam, preview }: ReadyProps) {
             signedIn={Boolean(session)}
             headingRef={featuredHeading}
           />
+          <TripPoster key={`${featured.id}-${preview}`} option={featured} preview={preview} />
           <DayPlan option={featured} enrichment={enrichment} />
           <CostBreakdown trip={trip} option={featured} />
         </div>
         <div className={styles.asideCol}>
           <ChangeStop trip={trip} request={request} featured={featured} />
-          <OtherOptions requestId={trip.requestId} options={others} recommendedId={trip.recommendedOptionId} />
           <SearchLinks trip={trip} option={featured} />
         </div>
       </div>

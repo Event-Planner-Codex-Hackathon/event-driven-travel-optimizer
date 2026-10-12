@@ -5,6 +5,7 @@ import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { flushSync } from "react-dom";
 import type { OptimizeBody } from "@/contract/trip";
 import { formatRange } from "@/lib/format";
+import type { TripBrief } from "@/lib/tripBrief";
 import { setPendingSearch, takePendingSearch } from "@/lib/trips";
 import site from "../site/site.module.css";
 import { ArrowDown, ArrowRight, Check, Lock } from "./Icons";
@@ -39,7 +40,7 @@ const MODES: ReadonlyArray<{ id: Mode; label: string }> = [
   { id: "text", label: "Describe your trip" },
 ];
 
-type Start = (body: OptimizeBody, label: string) => void;
+type Start = (body: OptimizeBody, label: string, brief?: TripBrief) => void;
 
 export function TripForm() {
   const id = useId();
@@ -58,8 +59,8 @@ export function TripForm() {
   }, []);
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
-  const start: Start = (body, label) => {
-    setPendingSearch({ body, label, createdAt: new Date().toISOString() });
+  const start: Start = (body, label, brief) => {
+    setPendingSearch({ body, label, brief: brief ?? { description: body.text ?? "" }, createdAt: new Date().toISOString() });
     startTransition(() => router.push("/plan/searching"));
   };
 
@@ -147,6 +148,7 @@ function StandardForm({ labelledBy, busy, onStart }: FormProps) {
   const id = useId();
   const [draft, setDraft] = useState<TripDraft>(SWITCH_EXAMPLE);
   const [budgetText, setBudgetText] = useState(wholeNumber.format(SWITCH_EXAMPLE.budgetTry));
+  const [interests, setInterests] = useState("");
   const [editingEvent, setEditingEvent] = useState(false);
   const [errors, setErrors] = useState<DraftErrors>({});
 
@@ -174,7 +176,10 @@ function StandardForm({ labelledBy, busy, onStart }: FormProps) {
       form.querySelector<HTMLElement>("[aria-invalid='true']")?.focus();
       return;
     }
-    onStart(draftToBody(draft), draftLabel(draft));
+    const body = draftToBody(draft);
+    const note = interests.trim();
+    if (note) body.text = `My interests: ${note}`;
+    onStart(body, draftLabel(draft), { description: body.text ?? "", interests: note });
   }
 
   const fieldId = (name: string) => `${id}-${name}`;
@@ -402,6 +407,11 @@ function StandardForm({ labelledBy, busy, onStart }: FormProps) {
             ))}
           </div>
         </fieldset>
+        <div className={`${styles.field} ${styles.wide}`}>
+          <label className={styles.label} htmlFor={fieldId("interests")}>Music, events and things you enjoy (optional)</label>
+          <textarea id={fieldId("interests")} className={`${styles.input} ${styles.textarea}`} rows={3} maxLength={500} value={interests} onChange={(e) => setInterests(e.target.value)} placeholder="Live jazz, house music, street food, night markets, architecture…" aria-describedby={fieldId("interests-note")} />
+          <p className={styles.hint} id={fieldId("interests-note")}>Keep your interests with the trip. Personalized event matching is awaiting integration.</p>
+        </div>
       </div>
 
       <SubmitRow busy={busy} />

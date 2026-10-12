@@ -69,3 +69,30 @@ Never invent a successful route or savings figure to keep the script on schedule
 - [ ] README states setup, scope, data limitations and preparation versus event-day work.
 - [ ] Demo link and any recording show source freshness accurately.
 - [ ] Submitted before 16:00 Istanbul time; receipt or confirmation recorded.
+
+## Event-day frontend readiness — October 12, 2026
+
+These observations apply to the current local frontend against contract v1.0.0; the preparation checklist above remains historical and unexecuted where not listed here.
+
+- [x] Description → searching screen → three returned route options exercised in the browser using the expanded SWITCH prompt. Current provider prices are heuristic/synthetic and visibly labelled.
+- [x] Bangkok → Taipei recalculation exercised; Singapore October 27–29 remained fixed, costs changed, and the exact original music/activity brief remained visible.
+- [x] Selecting a different option updated its city order, dates, cost breakdown, day plan and poster metadata.
+- [x] Poster PNG export exercised with explicit local synthetic artwork; no fal.ai call. Inspected the downloaded 1080×1350 PNG for route order, trip dates, SWITCH dates, branding and synthetic disclosure.
+- [x] Phone viewport (390×844) checked; comparison cards and poster controls reflowed with no horizontal overflow. Normal viewport restored.
+- [x] Production poster request with generation disabled displayed a clear unavailable message and retry control without disrupting the itinerary. No provider call or spend.
+- [x] TypeScript check, 19 tests and the Next.js production build passed for the frontend handoff.
+- [ ] One real, funded fal.ai generation and real-CDN export verified with Onur.
+- [ ] Three distinct Bangkok/Taipei/Vietnam alternatives returned, or missing destinations explicitly explained.
+- [ ] Sourced personalized event suggestions and their match reasons integrated.
+- [ ] Final 120-second rehearsal and submission packaging after backend integration.
+
+### Two-minute Pookie pitch with poster
+
+1. **0:00–0:20:** Show the filled description and fixed SWITCH dates. Mention jazz/electronic music, street food and culture as the traveller’s stated interests. Describe matching as pending unless real evidence is integrated.
+2. **0:20–0:45:** Compare all three returned cards. Explain one actual difference in route, dates, hotel nights or estimated price. Do not promise Vietnam until it appears in the backend results.
+3. **0:45–1:15:** Replace Bangkok with Taipei, recalculate, and point to the unchanged event plus changed costs and retained brief.
+4. **1:15–1:35:** Show the day plan and source/price labels. Use one genuine matching listing only after integration; otherwise state the current limitations.
+5. **1:35–1:55:** Show a previously generated poster, or start generation only with confirmed credits. Explain that fal.ai creates the artwork while the application renders the actual itinerary text. Download the PNG if the real CDN export has passed rehearsal. An explicit layout preview is not a generated poster.
+6. **1:55–2:00:** Finish on “Pookie keeps your event fixed and helps you compare the trip around it.”
+
+Keep one funded poster ready before presenting so image latency does not consume the pitch. Do not enable synthetic preview during a live-data claim. See `docs/proposals/day-plan-enrichment.md` for the integration handoff and observed parser/catalog limitations.

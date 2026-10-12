@@ -315,3 +315,9 @@ An ink rectangle with sky-blue Barlow 600 text. It sits wherever example or synt
 ## Pookie brand mark
 
 The rounded P contains a destination dot. Both navigation headers use `src/components/site/PookieMark.tsx`; the matching favicon is `src/app/icon.svg` and the reusable vector asset is `public/pookie-logo.svg`. Keep the mark upright. The wordmark uses the reading face at 700 weight with slightly tight letter spacing. Status labels retain their meanings: fixed green, flexible lavender, replaceable blue and unknown red. No yellow or amber accents are used.
+
+## Trip comparison and poster
+
+Route comparison uses three navy cards with an ice-blue selected border, a recommendation badge, actual route dates and hotel-night counts, estimated totals and backend-supplied tradeoffs. It stacks on narrower screens. Display the original trip brief separately from the planner’s normalized preferences; collecting interests does not prove event matching.
+
+The poster is a portrait souvenir in the existing blue palette. Use fal.ai artwork only after an explicit button action, then render Pookie branding, selected cities, trip dates and fixed event text in frontend code. A poster does not certify availability or price. PNG export is 1080×1350. Loading, queued, unavailable, quota/error and download-failure states remain within the panel. The local synthetic layout preview and its export are explicitly labelled and never counted as fal.ai output.

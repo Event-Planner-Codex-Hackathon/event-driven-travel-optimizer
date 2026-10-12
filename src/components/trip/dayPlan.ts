@@ -31,6 +31,9 @@ export type PlanEvent = {
   role: "main-event" | "nearby";
   /** Free text from the source, e.g. "Free", "From 450 TRY"; null when unknown. */
   priceNote?: string | null;
+  /** Proposed optional match evidence. Display only what the backend grounds in the listing. */
+  matchedInterests?: string[];
+  matchReason?: string;
 };
 
 export type WeatherDay = {

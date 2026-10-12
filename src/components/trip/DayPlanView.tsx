@@ -237,6 +237,7 @@ function Day({ day, option, signedIn }: { day: PlanDay; option: RouteOption; sig
                 <li key={event.id} className={styles.near}>
                   <p className={styles.nearTitle}>{event.title}</p>
                   <EventMeta event={event} />
+                  <EventMatch event={event} />
                   <EventFoot event={event} signedIn={signedIn} />
                 </li>
               ))}
@@ -451,8 +452,23 @@ function Activity({ row, day, option, signedIn }: ActivityProps) {
 
 function EventMeta({ event }: { event: PlanEvent }) {
   const time = event.startTime ? (event.endTime ? `${event.startTime}–${event.endTime}` : event.startTime) : null;
-  const parts = [time, event.venue, event.priceNote].filter(Boolean);
+  const parts = [time, event.venue, event.priceNote || "Ticket price unknown"].filter(Boolean);
   return parts.length ? <p className={styles.actMeta}>{parts.join(" · ")}</p> : null;
+}
+
+function EventMatch({ event }: { event: PlanEvent }) {
+  const reason = typeof event.matchReason === "string" ? event.matchReason.trim() : "";
+  const interests = Array.isArray(event.matchedInterests)
+    ? event.matchedInterests.filter((value): value is string => typeof value === "string" && value.trim().length > 0)
+    : [];
+  if (!reason || !interests.length || event.source === "synthetic") return null;
+  return (
+    <div className={styles.eventMatch}>
+      <p><strong>Why this matches your interests</strong></p>
+      <p>{reason}</p>
+      <ul aria-label="Matching interests">{interests.map((interest) => <li key={interest}>{interest}</li>)}</ul>
+    </div>
+  );
 }
 
 function EventFoot({ event, signedIn }: { event: PlanEvent; signedIn: boolean }) {
