@@ -1,6 +1,10 @@
 # Frontend/backend integration handoff — 12 October 2026
 
-## Current live integration — contract 1.4.0
+## Onur runtime update — contract 1.4.0
+
+Onur explicitly requested retaining `gpt-6.1-sol` and removing the newly added dollar-ledger/model gate. Local runtime now uses the configured model for both trip interpretation and event-interest extraction; Sol is the default. The separate `OPENAI_BUDGET_USD`/ledger gate is removed. Server key plus `OPENAI_SPEND_AUTHORIZED=true`, 48 KB request bound, 1,800 maximum output tokens, low reasoning, standard tier, no automatic retry, and shared process hourly/total-attempt limits remain. SerpApi's free-plan/no-extra-credit guard is unchanged. The following prior integration notes describe the pushed 39451f6 checkpoint before this local update.
+
+## Previous live integration — contract 1.4.0
 
 The Product Lead subsequently requested real API results, authorized up to **US$5 OpenAI runtime spend**, and explicitly authorized the minimal server integration here. The final instruction was to wire and push without further testing. Keep the current live preview on port 3002 running; do not replace it with the earlier provider-disabled preview.
 
