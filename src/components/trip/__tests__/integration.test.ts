@@ -4,6 +4,8 @@ import { optimizeTrip, reoptimizeTrip } from "@/server/trips";
 import { DEMO_REQUESTS } from "@/contract/demo";
 import { assertTripUpdate, priceSourceLabel, pricingLabel, publicSourceUrl } from "../pricingDisplay";
 import { cityVisit, eventContext } from "../contextDisplay";
+import { acceptNearbyResponse } from "../NearbySights";
+import type { NearbyPlacesResponse } from "@/contract/trip";
 
 const trip = optimizeTrip({ text: DEMO_REQUESTS[0].text }, "2026-10-12");
 const source: PriceSource = { provider: "serpapi", product: "google_flights", fetchedAt: "2026-10-12T11:00:00Z", fromCache: false, description: "Synthetic test observation" };
@@ -57,5 +59,13 @@ describe("event browsing scope", () => {
   });
   it("does not suggest the fixed event again as an optional activity", () => {
     expect(eventContext({ ...event, name: option.event.name }, option, option.event.city)).toBe("fixed-event");
+  });
+});
+
+describe("selected-route sights", () => {
+  it("ignores sights for a different route without displaying them", () => {
+    const response: NearbyPlacesResponse = { routeId: "old-route", source: "geoapify", cities: [], providerCalls: 0, attribution: "Synthetic unit test", note: "Synthetic unit test" };
+    expect(() => acceptNearbyResponse(response, "new-route")).toThrow(/different route/);
+    expect(acceptNearbyResponse(response, "old-route")).toBe(response);
   });
 });

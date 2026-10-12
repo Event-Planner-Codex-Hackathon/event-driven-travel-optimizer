@@ -17,6 +17,7 @@ import { TripBriefView } from "./TripBriefView";
 import { TripPoster } from "./TripPoster";
 import { PriceCheck } from "./PriceCheck";
 import { LocalContext } from "./LocalContext";
+import { NearbySights } from "./NearbySights";
 import { pricingLabel } from "./pricingDisplay";
 import { OtherOptions } from "./OtherOptions";
 import { enrichmentOf, syntheticEnrichment } from "./dayPlan";
@@ -174,6 +175,7 @@ function TripReady({ trip, optionParam, preview }: ReadyProps) {
         {hasSyntheticPrices(trip) ? <p className={styles.synthetic}>Demo data — synthetic, not live offers</p> : null}
         <ChangeSummary trip={trip} />
         <TripBriefView requestId={trip.requestId} request={request} />
+        {trip.interpretation ? <p className={styles.metaLine}>{trip.interpretation.mode === "openai" && trip.interpretation.status === "used" ? `Requirements interpreted with OpenAI${trip.interpretation.fromCache ? " (cached interpretation)" : ""}.` : trip.interpretation.status === "fallback" ? "AI interpretation was unavailable; the deterministic parser read your request." : "The deterministic parser read your request; AI interpretation is disabled."} Confirm the interpreted dates and preferences. Routes, costs and ranking are calculated deterministically.</p> : null}
         <PriceCheck trip={trip} session={provider.session} sessionError={provider.error} refresh={provider.refresh} locked={revisionBusy} onBusy={setRevisionBusy} />
       </div>
 
@@ -189,6 +191,7 @@ function TripReady({ trip, optionParam, preview }: ReadyProps) {
           <TripPoster key={`${featured.id}-${preview}`} option={featured} preview={preview} providerSession={provider.session} onProviderUsed={provider.refresh} />
           <DayPlan option={featured} enrichment={enrichment} />
           {!preview ? <LocalContext key={featured.id} option={featured} session={provider.session} refresh={provider.refresh} /> : null}
+          {!preview ? <NearbySights key={`sights-${featured.id}`} option={featured} session={provider.session} refresh={provider.refresh} /> : null}
           <CostBreakdown trip={trip} option={featured} />
         </div>
         <div className={styles.asideCol}>

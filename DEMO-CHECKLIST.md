@@ -97,14 +97,15 @@ These observations apply to the current local frontend against contract v1.0.0; 
 
 Keep one funded poster ready before presenting so image latency does not consume the pitch. Do not enable synthetic preview during a live-data claim. See `docs/proposals/day-plan-enrichment.md` for the integration handoff and observed parser/catalog limitations.
 
-## Combined contract v1.2.1 rehearsal
+## Combined contract v1.3.0 rehearsal
 
 - [x] Pookie frontend integrated with Onur's reviewed backend without changing server logic or contract schemas.
 - [x] Fixed-event search and explicit confirmation exercised against the real local catalog endpoint.
 - [x] Form → three routes → city replacement verified; exact interests retained, event protected, requirements version 1→2.
 - [x] Production restart + empty replay price check verified; version 2→3, zero paid-provider calls, estimates retained with missing-recording notes.
 - [x] Free weather endpoint exercised, attribution shown, dates beyond the forecast horizon stayed unknown.
-- [x] TypeScript, production build and 105 tests passed; mobile width 390px had no overflow.
+- [x] TypeScript, production build and 127 tests passed; mobile width 390px had no overflow.
+- [x] Latest text flow labelled disabled OpenAI interpretation and the sights panel disabled unconfigured Geoapify; no external calls to those providers.
 - [ ] Real flight/hotel/event adapters and funded fal.ai generation/export verified within agreed budgets.
 - [ ] Vietnam support, interpretation corrections and automated personalized matching completed by backend owner.
 

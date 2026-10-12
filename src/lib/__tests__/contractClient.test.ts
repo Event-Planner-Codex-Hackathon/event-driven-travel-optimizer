@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { getSession, getWeather, importEvent, priceCheckTrip, reoptimizeTrip, searchEvents } from "@/contract/client";
+import { getNearbyPlaces, getSession, getWeather, importEvent, priceCheckTrip, reoptimizeTrip, searchEvents } from "@/contract/client";
 import { DEMO_REQUESTS } from "@/contract/demo";
 import { optimizeTrip } from "@/server/trips";
 
 afterEach(() => vi.unstubAllGlobals());
-describe("frontend uses backend v1.2.1 wire contract", () => {
+describe("frontend uses backend v1.3.0 wire contract", () => {
   it("sends the current requirements version and normalized request on both update endpoints", async () => {
     const trip = optimizeTrip({ text: DEMO_REQUESTS[0].text }, "2026-10-12");
     const fetcher = vi.fn(async () => new Response(JSON.stringify(trip), { headers: { "content-type": "application/json" } }));
@@ -25,5 +25,14 @@ describe("frontend uses backend v1.2.1 wire contract", () => {
     expect(calls[2][0]).toBe("/api/events/import");
     expect(JSON.parse(calls[2][1].body as string)).toEqual({ url: "12345678" });
     expect(calls[3][0]).toBe("/api/weather?city=Singapore&start=2026-10-27&end=2026-10-29");
+  });
+  it("requests sights for the selected route with fallback cities in its actual order", async () => {
+    const option = optimizeTrip({ text: DEMO_REQUESTS[0].text }, "2026-10-12").options[0];
+    const fetcher = vi.fn(async () => new Response("{}", { headers: { "content-type": "application/json" } }));
+    vi.stubGlobal("fetch", fetcher);
+    await getNearbyPlaces(option);
+    const [url, init] = fetcher.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe(`/api/routes/${option.id}/places`);
+    expect(JSON.parse(init.body as string)).toEqual({ route: { cities: [...new Set(option.citySequence.filter((stop) => stop.purpose !== "origin").map((stop) => stop.city))] } });
   });
 });

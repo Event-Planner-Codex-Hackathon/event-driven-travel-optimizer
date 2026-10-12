@@ -1,6 +1,6 @@
 # Proposal: day-by-day plan with events and weather (contract v1.1.0)
 
-Current integration uses contract **1.2.1** and the existing separate event/weather endpoints; see [integration handoff](../integration-handoff.md). The enrichment and match-evidence fields below remain proposals. The earlier frontend handoff at the bottom describes the preceding v1.0.0 cycle.
+Current integration uses contract **1.3.0** and the existing separate event/weather/sights endpoints; see [integration handoff](../integration-handoff.md). The enrichment and match-evidence fields below remain proposals. The earlier frontend handoff at the bottom describes the preceding v1.0.0 cycle.
 
 Status: **proposed by the frontend, not agreed yet.** Nothing here changes `src/contract/trip.ts` until both owners agree. The frontend already reads these fields when they are present and works without them.
 

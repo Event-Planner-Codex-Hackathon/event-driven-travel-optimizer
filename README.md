@@ -29,12 +29,18 @@ npm test                     # planner, parser and constraint tests
 | `TICKETMASTER_MAX_CALLS_PER_HOUR` / `EVENTBRITE_MAX_CALLS_PER_HOUR` | No | Each provider’s per-process rolling hourly cap (default 40); failed attempts count. |
 | `TICKETMASTER_API_KEY` | No | Ticketmaster event search. |
 | `EVENTBRITE_TOKEN` | No | Import one Eventbrite event by link. |
+| `GEOAPIFY_API_KEY` | No | Server-only nearby sights for a selected route via `/api/routes/{routeId}/places`. |
+| `GEOAPIFY_MAX_CALLS_PER_HOUR` / `GEOAPIFY_MAX_CALLS_TOTAL` | No | Downward configurable ceilings: default/max 20 per hour, 100 total per process. |
+| `OPENAI_API_KEY` | No | Server-only natural-language requirement extraction in the existing optimize endpoint. |
+| `OPENAI_MODEL` | No | Runtime model, default `gpt-6.1-sol`. |
+| `OPENAI_SPEND_AUTHORIZED` | No | Must be `true` after spend/event-credit confirmation; otherwise no OpenAI calls. |
+| `OPENAI_MAX_CALLS_PER_HOUR` / `OPENAI_MAX_CALLS_TOTAL` | No | Downward configurable ceilings: default/max 10 per hour, 20 total per process. |
 
 Frankfurter (exchange rates) and Open-Meteo (weather) need no key.
 
 API contract: [docs/api-contract.md](docs/api-contract.md). Backend design and limitations: [docs/backend.md](docs/backend.md).
 
-The integrated Pookie journey uses backend contract **1.2.1**: confirm an event, create a trip, compare three options, replace the optional city, and explicitly check flight/hotel prices. Provider/replay source labels, allowances and guest limits stay visible. Local event search, Eventbrite import, weather and fal.ai poster generation use the existing server endpoints; provider calls start only through explicit actions. FX reference rates are fetched by the backend when planning. Ticket prices and automated interest matching are still unavailable, and Vietnam is outside the current catalog. See [current integration verification and limitations](docs/integration-handoff.md).
+The integrated Pookie journey uses backend contract **1.3.0**: confirm an event, create a trip, compare three options, replace the optional city, and explicitly check flight/hotel prices. Provider/replay source labels, allowances and guest limits stay visible. Local event search, Eventbrite import, weather, Geoapify sights and fal.ai poster generation use the existing server endpoints on explicit actions. FX reference rates are fetched by the backend when planning; text interpretation may use OpenAI only with its server spending gate enabled, and the returned interpretation mode is shown. Ticket prices and automated interest matching are still unavailable, and Vietnam is outside the current catalog. See [current integration verification and limitations](docs/integration-handoff.md).
 
 ## Preparation documents
 

@@ -2,7 +2,7 @@
 
 ## Current Pookie integration
 
-The Product Lead authorized integration of the pushed work at about 14:43 Istanbul time. This cycle combines backend `2b277f3` through `a7db23c` with frontend `e67344c` in an isolated checkout on `codex/pookie-integration`. Contract **1.2.1** is the source of truth. Server code, API handlers, contract schemas and package manifests are unchanged from the reviewed backend/main revision.
+The Product Lead authorized integration of the pushed work at about 14:43 Istanbul time. This cycle combines the latest backend `b1fa4db` through main `9836495` with frontend `e67344c` in an isolated checkout on `codex/pookie-integration`. Contract **1.3.0** is the source of truth. Server code, API handlers, contract schemas and package manifests are unchanged from that backend/main revision. The preceding v1.2.1 integration checkpoint is preserved in `040a025`.
 
 The Pookie name, blue palette, logo, comparison cards, retained travel brief and poster/export UI are preserved. New frontend connections:
 
@@ -14,18 +14,21 @@ The Pookie name, blue palette, logo, comparison cards, retained travel brief and
 - Local events/weather calls the existing endpoints on user action. The event browser excludes the fixed event and listings with known dates outside the visit, keeps partial/unmapped results visibly unconfirmed, and never inserts them into the itinerary. Ticket prices remain unknown. Search receipt time is distinct from unavailable provider observation age.
 - Weather displays the original fetch time, Open-Meteo attribution, forecast horizon and explicit unavailable/beyond-horizon days. It does not change routes, schedules or ranking. These independent responses are displayed separately from the unimplemented proposed day-plan enrichment schema.
 - The poster uses the existing hero endpoint and server feature/allowance flags. Generation is explicit; selected-route facts and PNG export remain frontend-owned. Real generation was not exercised.
+- The v1.3.0 text result shows whether OpenAI interpreted the requirements, a cached interpretation was reused, or the deterministic parser was used because AI was disabled/unavailable. It does not claim AI-derived routes, prices or interest matching. Spending authorization remains server-owned and was disabled during this rehearsal.
+- `/api/routes/{id}/places` supplies sights for the selected route, with its fallback city order after restart. The new sights panel preserves Geoapify/OpenStreetMap attribution, per-city status, original cache timestamps, search radius and centre scope; fees/hours stay unknown. Responses for other route ids are ignored. No map or frontend geocoding was added.
 
 Verification in this cycle:
 
-- TypeScript, production build and **105 tests across 12 files** passed. Ten new tests cover the client wire contract, stale/unrelated/event-changing update rejection, replay/cache labels, estimated allowances, public links and event browsing scope.
+- TypeScript, production build and **127 tests across 14 files** passed after the v1.3.0 merge. Twelve new integration tests cover the client wire contract, stale/unrelated/event-changing update rejection, replay/cache labels, estimated allowances, public links, event browsing scope and selected-route sights.
 - Browser: fixed-event catalog search and confirmation → structured form with interests → three options → Bangkok-to-Taipei recalculation passed. SWITCH remained Singapore October 27–29, requirements advanced 1→2, and exact interests were retained.
 - Browser: production server restarted with replay mode and an empty observation directory; price-check fallback advanced requirements 2→3, retained the event/brief, reported zero provider calls and missing recordings, and kept estimates honestly labelled.
-- Open-Meteo and Frankfurter were exercised with free endpoints. Weather beyond October 27 stayed unknown. No SerpApi, Ticketmaster, Eventbrite or fal.ai external calls, paid calls, bookings, or observation recordings were made.
+- Browser: the v1.3.0 free-text example returned three options and explicitly identified disabled OpenAI interpretation. Unconfigured Geoapify sights were disabled. Enter in fixed-event search stayed in the form and returned the curated catalog result without submitting the trip.
+- Open-Meteo and Frankfurter were exercised with free endpoints. Weather beyond October 27 stayed unknown. No OpenAI, Geoapify, SerpApi, Ticketmaster, Eventbrite or fal.ai external calls, paid calls, bookings, or observation recordings were made.
 - Phone viewport 390×844 showed no horizontal overflow; normal viewport restored. Poster PNG layout/export was checked in the preceding frontend cycle with explicit synthetic artwork, not a fal.ai result.
 
 Remaining before claiming a live demo:
 
-1. Confirm free-plan/credit budgets and run one controlled real-adapter check with Onur: flight, hotel, event source/import, and funded fal.ai artwork plus CDN export. Configuration flags alone do not verify those adapters.
+1. Confirm free-plan/credit budgets and run one controlled real-adapter check with Onur: flight, hotel, event source/import, Geoapify sights, funded OpenAI interpretation and fal.ai artwork plus CDN export. Configuration flags alone do not verify those adapters or the configured OpenAI model. Runtime OpenAI remains behind the explicit spending gate.
 2. Vietnam is not in the backend catalog and the parser accepts at most two optional city candidates. The expanded three-destination prompt still exceeds that scope. Preference parsing can interpret "comfortable" as comfort lodging despite "standard hotels"; this remains backend-owned.
 3. Interest scoring, fixed-event session times, ticket prices and source observation timestamps are absent from the event contract. Keyword browsing is available; automated personalized event matching is not implemented.
 4. `/prices` and `/dev` remain backend diagnostic pages rather than the primary Pookie journey. Final 120-second rehearsal, submission and any deployment remain separate tasks.
@@ -65,3 +68,14 @@ Frontend fixes are intentionally left to Product Lead. No messages were sent to 
 When Onur confirms credentials are ready, first inspect **only `GET /api/session`**, then run one minimal authorized request per real adapter, accounting for quota (SerpApi flights/hotels/events, Ticketmaster, Eventbrite import, one Fal banner). Never inspect `.env.local` contents. The local preview process deliberately has keys/fetches disabled and must be restarted normally for that stage; it has no copied credential file.
 
 Then perform the two demo requests' record/replay rehearsal once, retain original timestamps and replay labels, and review SerpApi terms plus obtain Onur's sharing approval before committing recordings. Observation JSON is Git-ignored. Geoapify remains pending separate approval.
+
+
+## v1.3.0 update
+
+Backend `b1fa4db` adds OpenAI requirement interpretation to the **existing** optimize text endpoint, enabled only by a server key plus `OPENAI_SPEND_AUTHORIZED=true`. Model is configurable (`gpt-6.1-sol` default); standard tier, low reasoning, 1,800 output tokens maximum, no retries/tools, 10/hour and 20 total attempts per process. Structured forms remain deterministic. Failures/disabled mode are explicitly labeled. Deterministically parsed event fields and explicit form fields retain precedence.
+
+Geoapify nearby sights are available through `POST /api/routes/{routeId}/places` and typed `getNearbyPlaces(route)`. Results are around catalog city centres with attribution, unknown fees/hours and original cache timestamps. They never affect event feasibility, ranking or costs. Product Lead still owns displaying this optional response; no product UI files were changed. `GET /api/session` reports the new `aiParsing` / `nearbyPlaces` flags without external calls.
+
+Combined verification: 10 test files, **107 tests passed**; typecheck and production build passed. No real-key OpenAI/Geoapify call has been made. Browser interaction remains unverified due to the earlier denied permission. The refreshed production preview uses an ignored `.env.local` symlink to Onur's existing local credential file; no credential contents were inspected, copied or committed. Previous all-provider-disabled smoke-process overrides are removed on restart. Real adapter validation still begins with session feature inspection when Onur signals that keys are ready.
+
+Session-only runtime inspection after restart: **HTTP 200**, `features.nearbyPlaces=true`, `features.aiParsing=false`; guest allowances `nearby=10/hour`, `interpret=5/hour`. This confirms configuration flags only. No provider request was made by that endpoint. OpenAI needs both a server key and explicit API spending authorization before it can become enabled.
