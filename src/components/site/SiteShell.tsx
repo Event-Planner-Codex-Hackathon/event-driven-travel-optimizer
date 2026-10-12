@@ -5,8 +5,9 @@ import Link from "next/link";
 import { useSyncExternalStore } from "react";
 import { HallBackdrop } from "../landing/HallBackdrop";
 import { readFont, signFont } from "../landing/fonts";
-import { ArrowRight, Plane } from "../landing/Icons";
+import { ArrowRight } from "../landing/Icons";
 import { signOut, useSession } from "@/lib/session";
+import { PookieMark } from "./PookieMark";
 import styles from "./site.module.css";
 
 const motionQuery = "(prefers-reduced-motion: reduce)";
@@ -51,11 +52,11 @@ export function SiteHeader({ current }: { current?: "plan" | "trips" }) {
   const user = useSession();
   return (
     <header className={styles.signBand}>
-      <Link className={styles.wordmark} href="/" aria-label="EventHopper home">
+      <Link className={styles.wordmark} href="/" aria-label="Pookie home">
         <span className={styles.wordmarkTile}>
-          <Plane />
+          <PookieMark />
         </span>
-        <span className={styles.wordmarkText}>EventHopper</span>
+        <span className={styles.wordmarkText}>Pookie</span>
       </Link>
       <nav className={styles.nav} aria-label="Main">
         <Link className={styles.navLink} href="/trips" aria-current={current === "trips" ? "page" : undefined}>
@@ -81,9 +82,9 @@ export function SiteHeader({ current }: { current?: "plan" | "trips" }) {
 export function SiteFooter() {
   return (
     <footer className={styles.footer}>
-      <p className={styles.footerMark}>EventHopper</p>
+      <p className={styles.footerMark}>Pookie</p>
       <div className={styles.footerText}>
-        <p>EventHopper compares trips around a fixed event. It doesn&rsquo;t book, sell tickets or take payment details.</p>
+        <p>Pookie compares trips around a fixed event. It doesn&rsquo;t book, sell tickets or take payment details.</p>
         <p>Every price is an estimate, not a live fare. Check the final price with the provider before you pay.</p>
       </div>
     </footer>

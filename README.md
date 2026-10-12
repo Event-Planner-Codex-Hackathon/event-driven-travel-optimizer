@@ -1,4 +1,4 @@
-# EventHopper
+# Pookie
 
 Preparation workspace for the OpenAI × Istanbul Slush'D Codex Hackathon on October 12, 2026.
 

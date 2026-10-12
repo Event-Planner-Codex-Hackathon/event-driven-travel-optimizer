@@ -38,6 +38,7 @@ export function OtherOptions({ requestId, options, recommendedId }: Props) {
                   {option.id === recommendedId ? <span className={styles.tag}>Recommended</span> : null}
                 </h3>
                 <p className={styles.otherPath}>{cityPath(option)}</p>
+                {option.summary ? <p className={styles.otherSummary}>{option.summary}</p> : null}
                 <p className={styles.otherMoney}>
                   <span className={styles.otherTotal}>{formatMoney(option.costBreakdown.total)}</span>{" "}
                   <span className={site.estimateTag}>estimate</span>

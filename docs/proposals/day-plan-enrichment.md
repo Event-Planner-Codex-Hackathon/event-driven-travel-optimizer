@@ -12,6 +12,22 @@ The trip page now shows the route as a day-by-day plan. To make it an end-to-end
 
 ## Proposed fields
 
+### Personal interests — Product Lead requirement
+
+The frontend's "Use the SWITCH example" now includes live jazz, house/techno, small music nights, art/design events, street food, night markets, temples, architecture, and a moderate pace. These are the sample traveller's editable preferences, not statements about events that exist. They are submitted through the existing `text` field; the current rule-based parser does not yet extract or match these interests.
+
+For the jury demonstration, personalize suggestions from real retrieved listings around these interests and show a short, evidence-based "Why this matches you" explanation. A music-genre or category match must come from source metadata or a grounded description; do not claim a match solely because an event is in the same city.
+
+Backend coordination with Onur is required before changing the shared contract. Proposed preference fields are music genres, event categories, sightseeing/activity interests, exclusions, and preferred pace. Preserve those preferences through destination replacement and reoptimization. Suggested event responses should include the matching preferences and a reason grounded in the listing, alongside the existing provenance and nullable price information. Unknown ticket prices remain unknown and cannot certify budget fit. All extras must fit around the fixed event and travel/rest buffers.
+
+Until this is implemented and verified, the frontend can collect the description but must not claim the displayed listings were personalized. Explicit synthetic preview data remains a layout preview.
+
+### Route enrichment
+
+The Product Lead's example now requests three meaningfully different alternatives across Bangkok, Taipei, and Vietnam (Ho Chi Minh City as the proposed city), with at most one optional stop per itinerary. Three candidate cities are choices to compare, not three stops in one trip. Compare schedule, cost and sourced interest matches; do not substitute superficial hotel-style changes for route variety.
+
+Backend dependency: the current catalog has no Vietnam city, and parsing, normalization, planner enumeration and the override schema currently cap candidate cities at two. Onur needs to coordinate support for the third candidate, Vietnam city data/provenance, and selection of up to three distinct event-safe routes. If a requested city cannot fit the hard constraints, return an explicit reason and an eligible alternative; never force three countries by relaxing event dates, hiding unknown costs, or inventing inventory. The frontend continues to show only the alternatives actually returned.
+
 Add one optional field to `RouteOption`, and bump `CONTRACT_VERSION` to `1.1.0`:
 
 ```ts

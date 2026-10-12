@@ -18,7 +18,7 @@ The launch scenario is one traveler leaving Istanbul for SWITCH in Singapore (Oc
 
 ## Product Purpose
 
-EventHopper compares a small, disclosed set of trip routes that work around a fixed event and a fixed budget. It covers flights, hotel stays, known event costs and at most one optional city. Deterministic code checks event dates and travel chronology and totals every cost exactly. When the traveler swaps the optional city, it recalculates. To book, the traveler opens the provider's own public page; EventHopper never books or sells.
+Pookie compares a small, disclosed set of trip routes that work around a fixed event and a fixed budget. It covers flights, hotel stays, known event costs and at most one optional city. Deterministic code checks event dates and travel chronology and totals every cost exactly. When the traveler swaps the optional city, it recalculates. To book, the traveler opens the provider's own public page; Pookie never books or sells.
 
 Success means the traveler can see which feasible routes fit the budget, what each one trades off, and which costs are verified, estimated or still unknown.
 
@@ -28,7 +28,7 @@ The event dates and the budget are fixed; the route around them is not. Attendin
 
 ## Operating Context
 
-- People use EventHopper before they book. They compare options, then hand off to provider pages.
+- People use Pookie before they book. They compare options, then hand off to provider pages.
 - Inputs are origin, departure window, return deadline, budget in TRY, hotel preference and one optional city.
 - The first showing is a two-minute live demo at the OpenAI × Istanbul Codex Hackathon on October 12, 2026. Its key moment is replacing Bangkok with Taipei while the Singapore event dates stay protected.
 
@@ -43,7 +43,7 @@ The event dates and the budget are fixed; the route around them is not. Attendin
 
 ## Brand Commitments
 
-- The product name is EventHopper.
+- The product name is Pookie.
 - The landing experience is built with three.js and uses realistic 3D models with polished animation.
 
 ## Evidence on Hand
@@ -56,4 +56,4 @@ The event dates and the budget are fixed; the route around them is not. Attendin
 1. **Fixed points come first.** The event dates and the budget are the anchors, and everything else bends around them.
 2. **Show the math.** Every total breaks down into line items, each with its source and freshness.
 3. **Be honest about gaps.** Missing prices, partial search coverage and stale quotes are shown, never hidden.
-4. **Compare, then hand off.** EventHopper helps people decide; the provider handles the booking.
+4. **Compare, then hand off.** Pookie helps people decide; the provider handles the booking.

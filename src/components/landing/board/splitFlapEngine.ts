@@ -111,13 +111,13 @@ const MIN_TILT = (0.25 * Math.PI) / 180;
 const MAX_TILT = (1.3 * Math.PI) / 180;
 
 /* Palette (sRGB). */
-const CASE_COLOR = '#1f2226';
-const CHANNEL_COLOR = '#121417';
-const FLAP_COLOR = '#2a2d31';
-const GLYPH_COLOR = '#f2f1ea';
+const CASE_COLOR = '#1a2436';
+const CHANNEL_COLOR = '#0e1728';
+const FLAP_COLOR = '#253148';
+const GLYPH_COLOR = '#edf4ff';
 const STATUS_HEX: Record<BoardStatus, string | null> = {
   fixed: '#3ccf6e',
-  flex: '#ff8400',
+  flex: '#b5a4f5',
   swap: '#4fb3ff',
   unknown: '#ff5a4a',
   off: null,

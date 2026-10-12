@@ -67,15 +67,17 @@
   display: inline-flex;
   align-items: center;
   gap: 0.6rem;
-  font-family: var(--font-sign-stack);
+  font-family: var(--font-read-stack);
   font-weight: 700;
-  font-size: 1.65rem;
+  font-size: 1.5rem;
   line-height: 1;
   text-decoration: none;
   color: var(--signal);
+  letter-spacing: -0.035em;
 }
 
 .wordmarkTile {
+  border-radius: var(--radius-small);
   display: grid;
   place-items: center;
   width: 2.1rem;
@@ -85,9 +87,8 @@
 }
 
 .wordmarkTile svg {
-  width: 1.4rem;
-  height: 1.4rem;
-  transform: rotate(90deg);
+  width: 1.85rem;
+  height: 1.85rem;
 }
 
 .nav {
@@ -122,13 +123,14 @@
   display: inline-flex;
   align-items: center;
   gap: 0.6rem;
-  color: oklch(0.88 0.03 91);
+  color: oklch(0.88 0.035 250);
   font-family: var(--font-sign-stack);
   font-weight: 500;
   font-size: 1.1rem;
 }
 
 .navCta {
+  border-radius: var(--radius-control);
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
@@ -192,6 +194,7 @@
 
 /* ---------- Panels ---------- */
 .panel {
+  border-radius: var(--radius-card);
   background: var(--enamel);
   color: var(--ink);
   box-shadow:
@@ -204,13 +207,14 @@
 }
 
 .panelBand {
+  border-radius: var(--radius-card) var(--radius-card) 0 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
   padding: 0.9rem 1.25rem;
   background: var(--graphite);
-  color: oklch(0.95 0.008 95);
+  color: oklch(0.95 0.012 250);
 }
 
 .panelBand :focus-visible {
@@ -241,13 +245,14 @@
 }
 
 .boardRow {
+  border-radius: var(--radius-control);
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 0.5rem 1rem;
   padding: 1rem 1.1rem;
   background: var(--graphite);
-  color: oklch(0.95 0.008 95);
+  color: oklch(0.95 0.012 250);
 }
 
 .lamp {
@@ -285,6 +290,7 @@
 
 /* ---------- Controls ---------- */
 .signButton {
+  border-radius: var(--radius-control);
   appearance: none;
   display: inline-flex;
   align-items: stretch;
@@ -309,6 +315,7 @@
 }
 
 .signArrow {
+  border-radius: var(--radius-inset);
   display: grid;
   place-items: center;
   width: 2.5rem;
@@ -351,6 +358,7 @@
 }
 
 .ghostButton {
+  border-radius: var(--radius-control);
   appearance: none;
   display: inline-flex;
   align-items: center;
@@ -404,12 +412,12 @@
 }
 
 .input {
+  border-radius: var(--radius-control);
   width: 100%;
   min-width: 0;
   height: 3.25rem;
   padding: 0 0.85rem;
   border: 2px solid var(--ink);
-  border-radius: 0;
   background: var(--enamel);
   color: var(--ink);
   font-family: var(--font-read-stack);
@@ -443,6 +451,7 @@
 }
 
 .estimateTag {
+  border-radius: var(--radius-inset);
   display: inline-block;
   padding: 0.05rem 0.4rem;
   border: 1px solid currentColor;
@@ -461,7 +470,7 @@
   margin-top: var(--space-2xl);
   padding: var(--space-xl) var(--gutter);
   background: var(--ink);
-  color: oklch(0.88 0.012 91);
+  color: oklch(0.88 0.025 250);
 }
 
 .footerMark {

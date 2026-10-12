@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { flushSync } from "react-dom";
 import type { OptimizeBody } from "@/contract/trip";
-import { DEMO_REQUESTS } from "@/contract/demo";
 import { formatRange } from "@/lib/format";
 import { setPendingSearch, takePendingSearch } from "@/lib/trips";
 import site from "../site/site.module.css";
@@ -15,6 +14,7 @@ import {
   MAX_PLACES,
   ORIGINS,
   PLACES,
+  SWITCH_DESCRIPTION_EXAMPLE,
   SWITCH_EXAMPLE,
   TEXT_LABEL,
   TEXT_MAX,
@@ -417,7 +417,7 @@ function DescribeForm({ labelledBy, busy, onStart, initialText = "" }: FormProps
   const over = text.length > TEXT_MAX;
 
   function fillExample() {
-    const example = DEMO_REQUESTS[0].text;
+    const example = SWITCH_DESCRIPTION_EXAMPLE;
     setText(example);
     setError(null);
     const area = areaRef.current;
@@ -462,6 +462,9 @@ function DescribeForm({ labelledBy, busy, onStart, initialText = "" }: FormProps
             <li>the event, its city and its dates</li>
             <li>your total budget in TRY</li>
             <li>places you&rsquo;d like to add, if any</li>
+            <li>events you enjoy and your favourite music genres</li>
+            <li>food, culture, sights or activities you want to experience</li>
+            <li>your preferred pace and anything you want to avoid</li>
           </ul>
           <p>Leave out personal details such as passport or card numbers.</p>
         </div>
@@ -469,7 +472,7 @@ function DescribeForm({ labelledBy, busy, onStart, initialText = "" }: FormProps
           ref={areaRef}
           id={areaId}
           className={`${styles.input} ${styles.textarea}`}
-          rows={7}
+          rows={10}
           value={text}
           onChange={(e) => {
             setText(e.target.value);

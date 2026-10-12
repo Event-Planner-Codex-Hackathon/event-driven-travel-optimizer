@@ -6,6 +6,10 @@ The demonstration should prove one behavior: changing the optional city updates 
 
 Use Istanbul departure around October 21, 2026; return arrival by November 1; SWITCH Singapore October 27–29; Bangkok or Taipei; budget 100,000 TRY. The [official SWITCH site](https://www.switchsg.org/) is the event reference already checked in preparation.
 
+The frontend's description example also asks for live jazz, house/techno, small music nights, art/design events, street food, night markets, temples and architecture, at a moderate pace. The jury story is that the fixed event anchors the trip while the traveller's interests shape the free time. Once matching is implemented, show one sourced suggestion and explain which stated interest it matches; then replace the optional city and demonstrate that those interests are retained. Until then, describe personalization as planned and do not present synthetic previews as matched real events.
+
+The expanded example requests three distinct alternatives considering Bangkok, Taipei, and Vietnam (Ho Chi Minh City), with one optional stop per trip. Vietnam support and three-candidate route selection are backend dependencies, not completed capabilities. Rehearse this variety only once the returned results actually support it; otherwise disclose the supported search scope. Use route summaries to explain real differences in the returned options.
+
 Proposed defaults must appear as assumptions for confirmation: one adult, economy, one room; October 20–22 departure window; return by November 1 at 23:59 Istanbul time; Singapore arrival by October 26 and onward departure no earlier than October 30. Hotel quality, baggage, food and ground allowances remain editable and unconfirmed. Never turn an unspecified cost into zero.
 
 ## Two minute script

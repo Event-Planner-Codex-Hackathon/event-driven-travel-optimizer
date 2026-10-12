@@ -1,21 +1,21 @@
-/* EventHopper airport-wayfinding tokens. Scoped to .eh so the planner can share them. */
+/* Pookie airport-wayfinding tokens. Scoped to .eh so the planner can share them. */
 .eh {
   --ground: oklch(0.3 0.1 255);
   --ground-deep: oklch(0.19 0.06 262);
   --on-ground: oklch(0.97 0.01 250);
   --on-ground-muted: oklch(0.88 0.035 250);
   --ground-shadow: oklch(0.1 0.04 262);
-  --signal: oklch(0.87 0.175 91);
-  --signal-shade: oklch(0.81 0.165 86);
-  --signal-ink: oklch(0.33 0.06 80);
-  --ink: oklch(0.18 0.01 255);
-  --graphite: oklch(0.25 0.008 255);
-  --graphite-line: oklch(0.36 0.008 255);
-  --enamel: oklch(0.985 0 0);
-  --enamel-line: oklch(0.86 0.005 255);
-  --muted-ink: oklch(0.42 0.01 255);
+  --signal: oklch(0.82 0.095 245);
+  --signal-shade: oklch(0.75 0.12 245);
+  --signal-ink: oklch(0.32 0.065 255);
+  --ink: oklch(0.2 0.045 260);
+  --graphite: oklch(0.25 0.025 255);
+  --graphite-line: oklch(0.36 0.025 255);
+  --enamel: oklch(0.98 0.008 250);
+  --enamel-line: oklch(0.86 0.025 250);
+  --muted-ink: oklch(0.42 0.025 255);
   --lamp-fixed: oklch(0.75 0.19 148);
-  --lamp-flex: oklch(0.82 0.165 75);
+  --lamp-flex: oklch(0.78 0.115 290);
   --lamp-swap: oklch(0.74 0.13 235);
   --lamp-unknown: oklch(0.66 0.2 28);
   --alert: oklch(0.52 0.2 28);
@@ -36,6 +36,11 @@
   --space-l: clamp(2rem, 1.5rem + 2vw, 3rem);
   --space-xl: clamp(3rem, 2rem + 4vw, 5.5rem);
   --space-2xl: clamp(4.5rem, 3rem + 6vw, 8.5rem);
+
+  --radius-card: 14px;
+  --radius-control: 8px;
+  --radius-small: 6px;
+  --radius-inset: 4px;
 
   --gutter: clamp(1rem, 0.5rem + 2.4vw, 2.5rem);
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);

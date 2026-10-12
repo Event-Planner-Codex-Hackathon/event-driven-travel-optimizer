@@ -27,6 +27,7 @@
 }
 
 .eventRow {
+  border-radius: var(--radius-control);
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
@@ -34,7 +35,7 @@
   margin-top: 0.5rem;
   padding: 1rem 1.25rem;
   background: var(--graphite);
-  color: oklch(0.95 0.008 95);
+  color: oklch(0.95 0.012 250);
 }
 
 .eventText {
@@ -54,7 +55,7 @@
 .eventMeta {
   margin: 0.15rem 0 0;
   font-size: var(--step--1);
-  color: oklch(0.86 0.01 95);
+  color: oklch(0.86 0.02 250);
 }
 
 .eventFixed {
@@ -83,6 +84,7 @@
 }
 
 .synthetic {
+  border-radius: var(--radius-small);
   justify-self: start;
   margin: 0;
   padding: 0.25rem 0.65rem;
@@ -95,13 +97,14 @@
 }
 
 .changeRow {
+  border-radius: var(--radius-control);
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 0.5rem 1rem;
   padding: 0.85rem 1.1rem;
   background: var(--graphite);
-  color: oklch(0.95 0.008 95);
+  color: oklch(0.95 0.012 250);
 }
 
 .changeText {
@@ -158,12 +161,13 @@
 
 /* ---------- Featured route ---------- */
 .featured {
+  border-radius: var(--radius-card);
   container-type: inline-size;
   display: grid;
   gap: 1.25rem;
   padding: 1.25rem;
   background: var(--graphite);
-  color: oklch(0.95 0.008 95);
+  color: oklch(0.95 0.012 250);
   box-shadow:
     0 2px 0 oklch(0.14 0.01 255),
     0 28px 40px -22px oklch(0.1 0.04 262 / 0.7);
@@ -179,6 +183,7 @@
 
 .labelTile,
 .labelTileSmall {
+  border-radius: var(--radius-small);
   display: grid;
   place-items: center;
   background: oklch(0.2 0.006 255);
@@ -225,10 +230,11 @@
   line-height: 1.2;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: oklch(0.86 0.01 95);
+  color: oklch(0.86 0.02 250);
 }
 
 .tag {
+  border-radius: var(--radius-small);
   padding: 0.1rem 0.45rem;
   background: var(--signal);
   color: var(--ink);
@@ -248,6 +254,7 @@
 }
 
 .moneyCell {
+  border-radius: var(--radius-control);
   display: grid;
   gap: 0.3rem;
   align-content: start;
@@ -260,7 +267,7 @@
   font-weight: 600;
   font-size: 1.1rem;
   line-height: 1.2;
-  color: oklch(0.86 0.01 95);
+  color: oklch(0.86 0.02 250);
 }
 
 .moneyCell dd {
@@ -312,7 +319,7 @@
   top: 0.62em;
   width: 0.45rem;
   height: 0.45rem;
-  background: oklch(0.86 0.01 95);
+  background: oklch(0.86 0.02 250);
 }
 
 .warnings {
@@ -324,6 +331,7 @@
 }
 
 .warnings li {
+  border-radius: var(--radius-control);
   display: flex;
   align-items: baseline;
   gap: 0.75rem;
@@ -390,6 +398,7 @@
 }
 
 .item {
+  border-radius: var(--radius-control);
   display: grid;
   grid-template-columns: 1.5rem 8.5rem minmax(0, 1fr) auto;
   grid-template-areas: "mark when main cost";
@@ -397,7 +406,7 @@
   gap: 0.4rem 1rem;
   padding: 1rem 1.1rem;
   background: var(--graphite);
-  color: oklch(0.95 0.008 95);
+  color: oklch(0.95 0.012 250);
 }
 
 .itemMark {
@@ -429,7 +438,7 @@
   font-family: var(--font-read-stack);
   font-weight: 400;
   font-size: var(--step--1);
-  color: oklch(0.82 0.01 95);
+  color: oklch(0.82 0.02 250);
 }
 
 .itemMain {
@@ -449,7 +458,7 @@
   margin: 0.2rem 0 0;
   font-size: var(--step--1);
   line-height: 1.45;
-  color: oklch(0.86 0.01 95);
+  color: oklch(0.86 0.02 250);
 }
 
 .itemFixed,
@@ -497,7 +506,7 @@
   align-items: center;
   gap: 0.2rem 0.4rem;
   font-size: var(--step--1);
-  color: oklch(0.82 0.01 95);
+  color: oklch(0.82 0.02 250);
 }
 
 .legend {
@@ -640,13 +649,14 @@
 
 /* ---------- Other routes ---------- */
 .otherRow {
+  border-radius: var(--radius-control);
   display: grid;
   grid-template-columns: auto auto minmax(0, 1fr);
   align-items: start;
   gap: 0.4rem 0.85rem;
   padding: 1rem;
   background: var(--graphite);
-  color: oklch(0.95 0.008 95);
+  color: oklch(0.95 0.012 250);
 }
 
 .otherRow > :first-child {
@@ -673,7 +683,15 @@
   margin: 0.2rem 0 0;
   font-size: var(--step--1);
   line-height: 1.45;
-  color: oklch(0.86 0.01 95);
+  color: oklch(0.86 0.02 250);
+}
+
+.otherSummary {
+  margin: 0.55rem 0;
+  color: var(--on-ground-muted);
+  font-size: var(--step--1);
+  line-height: 1.45;
+  text-wrap: pretty;
 }
 
 .otherMoney {
@@ -773,6 +791,7 @@
 }
 
 .chip span {
+  border-radius: var(--radius-control);
   display: inline-flex;
   align-items: center;
   min-height: 2.75rem;
@@ -788,7 +807,7 @@
 }
 
 .chip:hover span {
-  background: oklch(0.95 0.04 91);
+  background: oklch(0.95 0.025 245);
 }
 
 .chip input:checked + span {
@@ -852,6 +871,7 @@
 }
 
 .searchLink {
+  border-radius: var(--radius-control);
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
@@ -865,7 +885,7 @@
 }
 
 .searchLink:hover {
-  background: oklch(0.95 0.04 91);
+  background: oklch(0.95 0.025 245);
 }
 
 .searchLink:focus-visible {
@@ -894,6 +914,7 @@
 }
 
 .searchIcon {
+  border-radius: var(--radius-inset);
   display: grid;
   place-items: center;
   width: 2.4rem;

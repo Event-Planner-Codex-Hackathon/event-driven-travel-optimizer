@@ -1,8 +1,8 @@
 /* Day-by-day plan on the trip page. Tokens live in ../landing/landing.css. */
 
 .plan {
-  --glyph: oklch(0.95 0.008 95);
-  --glyph-muted: oklch(0.84 0.01 95);
+  --glyph: oklch(0.95 0.012 250);
+  --glyph-muted: oklch(0.84 0.02 250);
   --row-inset: oklch(0.2 0.006 255);
   container-type: inline-size;
   display: grid;
@@ -32,6 +32,7 @@
 }
 
 .strip {
+  border-radius: var(--radius-control);
   display: grid;
   gap: 0.6rem;
   padding: 0.9rem 1.1rem;
@@ -133,6 +134,7 @@
 }
 
 .day {
+  border-radius: var(--radius-card);
   display: grid;
   grid-template-columns: 10.5rem minmax(0, 1fr);
   gap: 0 1.1rem;
@@ -390,6 +392,7 @@
 }
 
 .sourceTag {
+  border-radius: var(--radius-inset);
   padding: 0.02rem 0.4rem;
   border: 1px solid currentColor;
   font-family: var(--font-sign-stack);
@@ -448,6 +451,7 @@
 }
 
 .near {
+  border-radius: var(--radius-control);
   min-width: 0;
   padding: 0.65rem 0.8rem;
   background: var(--row-inset);
