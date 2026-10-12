@@ -152,9 +152,7 @@ export function Landing() {
             <div ref={captionsRef} className={styles.captions} data-motion={reducedMotion ? "reduced" : "full"}>
               <article data-caption className={styles.caption} data-active={step === 0 || undefined} aria-hidden={!stacked && step !== 0}>
                 <p className={styles.lede}>
-                  EventHopper plans your trip around the dates you can&rsquo;t move and the money you
-                  won&rsquo;t go over. It compares three routes, adds up every cost and labels where each price
-                  came from.
+                  Plan around the dates you can&rsquo;t move and the money you won&rsquo;t go over.
                 </p>
                 <div className={styles.actions}>
                   <a className={styles.signButton} href="#plan" tabIndex={stacked || step === 0 ? undefined : -1}>
@@ -259,7 +257,7 @@ export function Landing() {
         <p className={styles.footerMark}>EventHopper</p>
         <div className={styles.footerText}>
           <p>EventHopper compares trips around a fixed event. It doesn&rsquo;t book, sell tickets or take payment details.</p>
-          <p>Prices come from provider searches and can change. Check the final price with the provider before you pay.</p>
+          <p>Every price is an estimate, not a live fare. Check the final price with the provider before you pay.</p>
         </div>
       </footer>
     </div>

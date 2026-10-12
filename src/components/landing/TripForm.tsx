@@ -1,8 +1,9 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { ArrowRight, Lock } from "./Icons";
 import styles from "./Landing.module.css";
+import type { PlanResult, RouteSummary } from "./planTrip";
 
 export type OptionalStop = "none" | "bangkok" | "taipei";
 
@@ -82,7 +83,7 @@ function validate(draft: TripDraft): Errors {
 }
 
 type Props = {
-  onPlan: (draft: TripDraft) => Promise<string> | string;
+  onPlan: (draft: TripDraft, signal: AbortSignal) => Promise<PlanResult>;
 };
 
 export function TripForm({ onPlan }: Props) {
@@ -95,6 +96,9 @@ export function TripForm({ onPlan }: Props) {
     tone: "idle",
     text: "",
   });
+  const [routes, setRoutes] = useState<RouteSummary[]>([]);
+  const pending = useRef<AbortController | null>(null);
+  const resultsRef = useRef<HTMLOListElement>(null);
 
   const update = (patch: Partial<TripDraft>) => setDraft((current) => ({ ...current, ...patch }));
   const updateEvent = (patch: Partial<TripDraft["event"]>) =>
@@ -110,9 +114,25 @@ export function TripForm({ onPlan }: Props) {
       setStatus({ tone: "idle", text: "" });
       return;
     }
-    setStatus({ tone: "busy", text: "Checking your trip…" });
-    const message = await onPlan(draft);
-    setStatus({ tone: "done", text: message });
+    // A newer submit replaces any request still in flight.
+    pending.current?.abort();
+    const controller = new AbortController();
+    pending.current = controller;
+    setStatus({ tone: "busy", text: "Comparing routes around your event…" });
+    try {
+      const result = await onPlan(draft, controller.signal);
+      if (controller.signal.aborted) return;
+      setRoutes(result.kind === "routes" ? result.routes : []);
+      setStatus({ tone: "done", text: result.message });
+      if (result.kind === "routes") {
+        const smooth = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        requestAnimationFrame(() =>
+          resultsRef.current?.scrollIntoView({ block: "nearest", behavior: smooth ? "smooth" : "auto" }),
+        );
+      }
+    } catch {
+      // Aborted by a newer submit.
+    }
   }
 
   const fieldId = (name: string) => `${id}-${name}`;
@@ -305,6 +325,30 @@ export function TripForm({ onPlan }: Props) {
       <p className={styles.status} role="status" aria-live="polite" data-tone={status.tone}>
         {status.text}
       </p>
+      {routes.length > 0 && status.tone === "done" ? (
+        <ol ref={resultsRef} className={styles.routes} aria-label="Routes compared">
+          {routes.map((route) => (
+            <li className={styles.route} key={route.id} data-within={route.withinBudget || undefined}>
+              <span className={styles.routeLamp} aria-hidden="true" />
+              <span className={styles.routeLabel}>{route.label}</span>
+              <div className={styles.routeMain}>
+                <p className={styles.routeTitle}>
+                  {route.title}
+                  {route.recommended ? <span className={styles.routeTag}>Recommended</span> : null}
+                </p>
+                <p className={styles.routePath}>{route.path}</p>
+                {route.highlight ? <p className={styles.routeNote}>{route.highlight}</p> : null}
+              </div>
+              <div className={styles.routeMoney}>
+                <p className={styles.routeTotal}>
+                  {route.total} <span className={styles.routeEstimate}>estimate</span>
+                </p>
+                <p className={styles.routeDiff}>{route.difference}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
+      ) : null}
     </form>
   );
 }

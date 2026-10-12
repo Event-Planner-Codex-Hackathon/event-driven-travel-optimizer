@@ -78,16 +78,16 @@ export const BOARD_STATES: Record<BoardStateId, Variant> = {
   },
   handoff: {
     wide: [
-      { text: "WE COMPARE THE ROUTES", status: "off" },
-      { text: "YOU BOOK WITH THE PROVIDER", status: "off" },
-      { text: "WE NEVER SELL TICKETS", status: "off" },
+      { text: "WE COMPARE THE ROUTES", status: "fixed" },
+      { text: "YOU BOOK WITH THE PROVIDER", status: "fixed" },
+      { text: "WE NEVER SELL TICKETS", status: "fixed" },
       blank,
       { text: "PLAN YOUR TRIP BELOW", status: "flex" },
     ],
     narrow: [
-      { text: "WE COMPARE", status: "off" },
-      { text: "YOU BOOK WITH", status: "off" },
-      { text: "THE PROVIDER", status: "off" },
+      { text: "WE COMPARE", status: "fixed" },
+      { text: "YOU BOOK WITH", status: "fixed" },
+      { text: "THE PROVIDER", status: "fixed" },
       blank,
       { text: "PLAN YOUR TRIP", status: "flex" },
     ],

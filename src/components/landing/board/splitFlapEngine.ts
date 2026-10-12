@@ -117,7 +117,7 @@ const FLAP_COLOR = '#2a2d31';
 const GLYPH_COLOR = '#f2f1ea';
 const STATUS_HEX: Record<BoardStatus, string | null> = {
   fixed: '#3ccf6e',
-  flex: '#ffb21a',
+  flex: '#ff8400',
   swap: '#4fb3ff',
   unknown: '#ff5a4a',
   off: null,
@@ -494,7 +494,7 @@ function patchLens(mat: MeshPhysicalMaterial): void {
       .replace('#include <common>', '#include <common>\nvarying vec3 vLamp;')
       .replace(
         '#include <emissivemap_fragment>',
-        '#include <emissivemap_fragment>\nfloat lampCore = pow(clamp(normal.z, 0.0, 1.0), 6.0);\ntotalEmissiveRadiance += vLamp * (0.62 + 0.5 * lampCore) + vLamp * vLamp * 0.25 * lampCore;',
+        '#include <emissivemap_fragment>\nfloat lampCore = pow(clamp(normal.z, 0.0, 1.0), 6.0);\ntotalEmissiveRadiance += vLamp * (0.5 + 0.32 * lampCore);',
       );
   };
   mat.customProgramCacheKey = () => 'splitflap-lens';
