@@ -1,0 +1,355 @@
+/* Dashboard: saved trips as a departures board. Tokens live in ../landing/landing.css. */
+
+.title:focus {
+  outline: none;
+}
+
+.title:focus-visible {
+  outline: 3px solid var(--signal);
+  outline-offset: 3px;
+}
+
+.headActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem 1.75rem;
+  margin-top: 0.75rem;
+}
+
+.signIn {
+  max-width: 38rem;
+}
+
+/* ---------- Removal notice ---------- */
+.notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 1.25rem;
+}
+
+.notice[data-active] {
+  margin-bottom: var(--space-s);
+  padding: 0.55rem 1.1rem;
+  background: var(--ink);
+  color: oklch(0.95 0.008 95);
+}
+
+.noticeText {
+  margin: 0;
+  font-size: var(--step--1);
+  line-height: 1.45;
+}
+
+.undo {
+  min-height: 2.75rem;
+  color: var(--signal);
+}
+
+/* ---------- Board ---------- */
+.board {
+  --glyph: oklch(0.95 0.008 95);
+  --glyph-muted: oklch(0.86 0.01 95);
+  --case: oklch(0.15 0.008 255);
+  --tile: oklch(0.2 0.006 255);
+  position: relative;
+  padding: 0.5rem;
+  background: var(--case);
+  color: var(--glyph);
+  box-shadow:
+    0 2px 0 oklch(0.14 0.01 255),
+    0 28px 40px -22px oklch(0.1 0.04 262 / 0.7);
+}
+
+.table {
+  width: 100%;
+  margin-block: -2px;
+  border-collapse: separate;
+  border-spacing: 0 2px;
+  text-align: left;
+}
+
+.head th {
+  padding: 0.75rem 1.1rem 0.7rem;
+  background: var(--graphite);
+  vertical-align: bottom;
+  font-weight: inherit;
+  text-align: left;
+}
+
+.flapLabel {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.45rem;
+  font-size: 0.9rem;
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.flapWord {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.flapCell {
+  position: relative;
+  isolation: isolate;
+  display: inline-grid;
+  place-items: center;
+  width: 0.95em;
+  height: 1.5em;
+  background: var(--tile);
+  color: var(--glyph);
+}
+
+.flapCell::after {
+  content: "";
+  position: absolute;
+  inset: 50% 0 auto;
+  z-index: -1;
+  height: 1px;
+  background: oklch(0.11 0.006 255);
+}
+
+.row > th,
+.row > td {
+  padding: 1rem 1.1rem;
+  background: var(--graphite);
+  vertical-align: top;
+  font-weight: inherit;
+  text-align: left;
+}
+
+.cellLabel {
+  display: none;
+}
+
+.eventName,
+.routeTitle {
+  display: block;
+  font-family: var(--font-sign-stack);
+  font-weight: 700;
+  font-size: 1.3rem;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.eventName {
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.meta {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: var(--step--1);
+  line-height: 1.45;
+  color: var(--glyph-muted);
+  overflow-wrap: anywhere;
+}
+
+.total {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.15rem 0.5rem;
+}
+
+.totalValue {
+  font-family: var(--font-sign-stack);
+  font-weight: 700;
+  font-size: 1.35rem;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.synthetic {
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  margin-top: 0.45rem;
+  padding: 0.25rem 0.65rem;
+  background: var(--ink);
+  color: var(--signal);
+  font-family: var(--font-sign-stack);
+  font-weight: 600;
+  font-size: 1rem;
+  line-height: 1.25;
+  letter-spacing: 0.01em;
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-family: var(--font-sign-stack);
+  font-weight: 600;
+  font-size: 1.2rem;
+  line-height: 1.2;
+  white-space: nowrap;
+  color: oklch(0.78 0.15 28);
+}
+
+.row[data-within] .status {
+  color: var(--lamp-fixed);
+}
+
+.actionsCell {
+  width: 1%;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.35rem;
+}
+
+.open {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 2.75rem;
+  padding: 0.3rem 0.8rem 0.3rem 1rem;
+  background: var(--signal);
+  color: var(--ink);
+  font-family: var(--font-sign-stack);
+  font-weight: 700;
+  font-size: 1.2rem;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color 0.2s var(--ease-out);
+}
+
+.open:hover {
+  background: var(--signal-shade);
+}
+
+.openArrow {
+  width: 1.05rem;
+  height: 1.05rem;
+  transition: transform 0.35s var(--ease-out);
+}
+
+.open:hover .openArrow {
+  transform: translateX(3px);
+}
+
+.remove {
+  min-height: 2.75rem;
+  color: var(--glyph);
+  white-space: nowrap;
+}
+
+.remove:hover {
+  text-decoration-thickness: 3px;
+}
+
+/* ---------- Empty state ---------- */
+.empty {
+  max-width: 40rem;
+}
+
+.emptyText {
+  margin: 0;
+}
+
+.note {
+  margin: var(--space-s) 0 0;
+  max-width: 64ch;
+  font-size: var(--step--1);
+  line-height: 1.45;
+  color: var(--on-ground-muted);
+}
+
+/* ---------- Stacked rows ---------- */
+@media (max-width: 900px) {
+  .table,
+  .body {
+    display: block;
+    margin: 0;
+  }
+
+  .head {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .body {
+    display: grid;
+    gap: 2px;
+  }
+
+  .row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 1rem 1.25rem;
+    padding: 1rem 1.1rem;
+    background: var(--graphite);
+  }
+
+  .row > th,
+  .row > td {
+    display: block;
+    width: auto;
+    padding: 0;
+    background: none;
+  }
+
+  .eventCell,
+  .routeCell,
+  .actionsCell {
+    grid-column: 1 / -1;
+  }
+
+  .cellLabel {
+    display: block;
+    margin-bottom: 0.3rem;
+    font-family: var(--font-sign-stack);
+    font-weight: 600;
+    font-size: 0.95rem;
+    line-height: 1.2;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--glyph-muted);
+  }
+
+  .actionsCell {
+    padding-top: 0.9rem;
+    border-top: 1px solid var(--graphite-line);
+  }
+
+  .actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 1.5rem;
+  }
+}
+
+@media (max-width: 420px) {
+  .row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .open,
+  .openArrow {
+    transition: none;
+  }
+
+  .open:hover .openArrow {
+    transform: none;
+  }
+}

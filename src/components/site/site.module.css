@@ -1,0 +1,522 @@
+/* Shared shell and primitives for the app pages (planner, trip, dashboard). Tokens live in ../landing/landing.css. */
+
+.page {
+  --band-h: 3.75rem;
+  position: relative;
+  isolation: isolate;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  overflow-x: clip;
+}
+
+.backdropLayer {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+}
+
+.page > main,
+.page > footer {
+  position: relative;
+  z-index: 1;
+}
+
+.page > main {
+  flex: 1;
+}
+
+.skip {
+  position: absolute;
+  left: var(--gutter);
+  top: -4rem;
+  z-index: var(--z-overlay);
+  background: var(--ink);
+  color: var(--signal);
+  padding: 0.6rem 1rem;
+  font-family: var(--font-sign-stack);
+  font-weight: 600;
+  font-size: 1.1rem;
+  text-decoration: none;
+}
+
+.skip:focus-visible {
+  top: 0.75rem;
+}
+
+/* ---------- Sign band ---------- */
+.signBand {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-s);
+  height: var(--band-h);
+  padding: 0.5rem var(--gutter);
+  background: var(--ink);
+  color: var(--signal);
+}
+
+.signBand :focus-visible {
+  outline-color: var(--signal);
+}
+
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-family: var(--font-sign-stack);
+  font-weight: 700;
+  font-size: 1.65rem;
+  line-height: 1;
+  text-decoration: none;
+  color: var(--signal);
+}
+
+.wordmarkTile {
+  display: grid;
+  place-items: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  background: var(--signal);
+  color: var(--ink);
+}
+
+.wordmarkTile svg {
+  width: 1.4rem;
+  height: 1.4rem;
+  transform: rotate(90deg);
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: clamp(0.75rem, 2vw, 1.75rem);
+}
+
+.navLink {
+  appearance: none;
+  border: 0;
+  background: none;
+  padding: 0.35rem 0;
+  color: var(--signal);
+  font-family: var(--font-sign-stack);
+  font-weight: 600;
+  font-size: 1.2rem;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 0.25em;
+  text-decoration-thickness: 2px;
+  transition: text-decoration-color 0.2s var(--ease-out);
+}
+
+.navLink:hover,
+.navLink[aria-current="page"] {
+  text-decoration-color: currentColor;
+}
+
+.navUser {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: oklch(0.88 0.03 91);
+  font-family: var(--font-sign-stack);
+  font-weight: 500;
+  font-size: 1.1rem;
+}
+
+.navCta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 2.5rem;
+  padding: 0.3rem 0.85rem 0.3rem 1rem;
+  background: var(--signal);
+  color: var(--ink);
+  font-family: var(--font-sign-stack);
+  font-weight: 700;
+  font-size: 1.2rem;
+  text-decoration: none;
+  transition: background-color 0.2s var(--ease-out);
+}
+
+.navCta:hover {
+  background: var(--signal-shade);
+}
+
+.navArrow {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+/* ---------- Page layout ---------- */
+.container {
+  width: min(1120px, 100% - 2 * var(--gutter));
+  margin-inline: auto;
+}
+
+.pageHead {
+  display: grid;
+  gap: 0.75rem;
+  padding-block: var(--space-xl) var(--space-l);
+}
+
+.pageTitle {
+  margin: 0;
+  font-family: var(--font-sign-stack);
+  font-weight: 700;
+  font-size: var(--step-3);
+  line-height: 0.98;
+  letter-spacing: -0.005em;
+  text-wrap: balance;
+}
+
+.pageIntro {
+  margin: 0;
+  max-width: 60ch;
+  color: var(--on-ground-muted);
+  text-wrap: pretty;
+}
+
+.sectionTitle {
+  margin: 0 0 var(--space-s);
+  font-family: var(--font-sign-stack);
+  font-weight: 700;
+  font-size: var(--step-2);
+  line-height: 1;
+  text-wrap: balance;
+}
+
+/* ---------- Panels ---------- */
+.panel {
+  background: var(--enamel);
+  color: var(--ink);
+  box-shadow:
+    0 2px 0 oklch(0.1 0.04 262 / 0.9),
+    0 30px 60px -28px oklch(0.08 0.04 262 / 0.75);
+}
+
+.panel :focus-visible {
+  outline-color: var(--ink);
+}
+
+.panelBand {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 1.25rem;
+  background: var(--graphite);
+  color: oklch(0.95 0.008 95);
+}
+
+.panelBand :focus-visible {
+  outline-color: var(--signal);
+}
+
+.panelBandTitle {
+  margin: 0;
+  font-family: var(--font-sign-stack);
+  font-weight: 700;
+  font-size: 1.45rem;
+  line-height: 1.1;
+}
+
+.panelBody {
+  display: grid;
+  gap: 1.25rem;
+  padding: 1.5rem 1.25rem;
+}
+
+/* ---------- Board rows ---------- */
+.boardRows {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.boardRow {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  padding: 1rem 1.1rem;
+  background: var(--graphite);
+  color: oklch(0.95 0.008 95);
+}
+
+.lamp {
+  display: inline-block;
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 50%;
+  background: oklch(0.3 0.006 255);
+  box-shadow: inset 0 -2px 0 oklch(0 0 0 / 0.25);
+  flex: none;
+}
+
+.lamp[data-status="fixed"] {
+  background: var(--lamp-fixed);
+}
+
+.lamp[data-status="flex"] {
+  background: var(--lamp-flex);
+}
+
+.lamp[data-status="swap"] {
+  background: var(--lamp-swap);
+}
+
+.lamp[data-status="unknown"] {
+  background: var(--lamp-unknown);
+}
+
+.flapText {
+  font-family: var(--font-sign-stack);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* ---------- Controls ---------- */
+.signButton {
+  appearance: none;
+  display: inline-flex;
+  align-items: stretch;
+  min-height: 3.25rem;
+  padding: 0;
+  border: 0;
+  background: var(--signal);
+  color: var(--ink);
+  font-family: var(--font-sign-stack);
+  font-weight: 700;
+  font-size: 1.3rem;
+  line-height: 1;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.25s var(--ease-out);
+}
+
+.signButton > span:last-child {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 1.25rem 0.55rem 0.95rem;
+}
+
+.signArrow {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  margin: 0.375rem 0 0.375rem 0.375rem;
+  background: var(--ink);
+  color: var(--signal);
+}
+
+.signArrow svg {
+  width: 1.4rem;
+  height: 1.4rem;
+  transition: transform 0.35s var(--ease-out);
+}
+
+.signButton:hover {
+  background: var(--signal-shade);
+}
+
+.signButton:hover .signArrow svg {
+  transform: translateX(3px);
+}
+
+.signButton:disabled {
+  cursor: progress;
+  opacity: 0.75;
+}
+
+.signButtonDark {
+  background: var(--ink);
+  color: var(--signal);
+}
+
+.signButtonDark .signArrow {
+  background: var(--signal);
+  color: var(--ink);
+}
+
+.signButtonDark:hover {
+  background: var(--graphite);
+}
+
+.ghostButton {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.75rem;
+  padding: 0.35rem 1rem;
+  border: 2px solid currentColor;
+  background: transparent;
+  color: inherit;
+  font-family: var(--font-sign-stack);
+  font-weight: 600;
+  font-size: 1.15rem;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.ghostButton:hover {
+  background: oklch(1 0 0 / 0.08);
+}
+
+.textButton {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font-family: var(--font-sign-stack);
+  font-weight: 600;
+  font-size: 1.15rem;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.22em;
+}
+
+.field {
+  display: grid;
+  gap: 0.45rem;
+  align-content: start;
+  min-width: 0;
+}
+
+.label {
+  font-family: var(--font-sign-stack);
+  font-weight: 600;
+  font-size: 1.2rem;
+  line-height: 1.2;
+}
+
+.input {
+  width: 100%;
+  min-width: 0;
+  height: 3.25rem;
+  padding: 0 0.85rem;
+  border: 2px solid var(--ink);
+  border-radius: 0;
+  background: var(--enamel);
+  color: var(--ink);
+  font-family: var(--font-read-stack);
+  font-size: 1.05rem;
+  caret-color: var(--ink);
+}
+
+.input:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.input[aria-invalid="true"] {
+  border-color: var(--alert);
+  border-width: 3px;
+}
+
+.hint {
+  margin: 0;
+  font-size: var(--step--1);
+  line-height: 1.45;
+  color: var(--muted-ink);
+}
+
+.error {
+  margin: 0;
+  font-size: var(--step--1);
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--alert);
+}
+
+.estimateTag {
+  display: inline-block;
+  padding: 0.05rem 0.4rem;
+  border: 1px solid currentColor;
+  font-family: var(--font-read-stack);
+  font-weight: 500;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  vertical-align: 0.15em;
+}
+
+/* ---------- Footer ---------- */
+.footer {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-s) var(--space-xl);
+  margin-top: var(--space-2xl);
+  padding: var(--space-xl) var(--gutter);
+  background: var(--ink);
+  color: oklch(0.88 0.012 91);
+}
+
+.footerMark {
+  margin: 0;
+  font-family: var(--font-sign-stack);
+  font-weight: 700;
+  font-size: 2rem;
+  line-height: 1;
+  color: var(--signal);
+}
+
+.footerText {
+  display: grid;
+  gap: 0.5rem;
+  max-width: 64ch;
+  font-size: var(--step--1);
+}
+
+.footerText p {
+  margin: 0;
+}
+
+@media (max-width: 780px) {
+  .footer {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 520px) {
+  .navHideSmall {
+    display: none;
+  }
+}
+
+.navLink,
+.navCta {
+  white-space: nowrap;
+}
+
+@media (max-width: 420px) {
+  .wordmarkText {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .nav {
+    gap: 0.9rem;
+  }
+
+  .navCta {
+    padding-inline: 0.7rem;
+    font-size: 1.1rem;
+  }
+}

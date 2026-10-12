@@ -1,0 +1,549 @@
+/* Day-by-day plan on the trip page. Tokens live in ../landing/landing.css. */
+
+.plan {
+  --glyph: oklch(0.95 0.008 95);
+  --glyph-muted: oklch(0.84 0.01 95);
+  --row-inset: oklch(0.2 0.006 255);
+  container-type: inline-size;
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-sign-stack);
+  font-weight: 700;
+  font-size: var(--step-2);
+  line-height: 1;
+  text-wrap: balance;
+  color: var(--on-ground);
+}
+
+.banner {
+  line-height: 1.3;
+  text-wrap: pretty;
+}
+
+/* ---------- Sources and route notes ---------- */
+.board {
+  display: grid;
+  gap: 2px;
+}
+
+.strip {
+  display: grid;
+  gap: 0.6rem;
+  padding: 0.9rem 1.1rem;
+  background: var(--graphite);
+  color: var(--glyph);
+}
+
+.stripTitle {
+  margin: 0;
+  font-family: var(--font-sign-stack);
+  font-weight: 700;
+  font-size: 1.25rem;
+  line-height: 1.2;
+}
+
+.sources {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: 1.4rem;
+}
+
+.sourceList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 1.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.source {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.1rem 0.45rem;
+  font-size: var(--step--1);
+  line-height: 1.35;
+}
+
+.sourceName {
+  font-family: var(--font-sign-stack);
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.sourceState {
+  color: var(--glyph-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.source[data-tone="unavailable"] .sourceState {
+  color: oklch(0.78 0.15 28);
+}
+
+.sourcesNote {
+  grid-column: 1 / -1;
+  margin: 0;
+  max-width: 68ch;
+  font-size: var(--step--1);
+  line-height: 1.45;
+  color: var(--glyph-muted);
+  text-wrap: pretty;
+}
+
+.notes {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.note {
+  display: grid;
+  grid-template-columns: 1.2rem minmax(0, 1fr);
+  align-items: start;
+  gap: 0.6rem;
+  max-width: 68ch;
+  font-size: var(--step--1);
+  line-height: 1.45;
+  color: var(--glyph-muted);
+  text-wrap: pretty;
+}
+
+.noteIcon {
+  width: 1.2rem;
+  height: 1.2rem;
+  margin-top: 0.05rem;
+  color: var(--glyph);
+}
+
+/* ---------- Days ---------- */
+.days {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.day {
+  display: grid;
+  grid-template-columns: 10.5rem minmax(0, 1fr);
+  gap: 0 1.1rem;
+  padding: 1.1rem;
+  background: var(--graphite);
+  color: var(--glyph);
+}
+
+.dayHead {
+  display: grid;
+  align-content: start;
+  gap: 0.55rem;
+  min-width: 0;
+}
+
+.dayName {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 0 0.6rem;
+}
+
+.dayLamp {
+  margin-top: 0.42rem;
+}
+
+.dayTitle {
+  display: grid;
+  margin: 0;
+  font-family: var(--font-sign-stack);
+  font-weight: 700;
+  font-size: 1.35rem;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+
+.dayCity {
+  font-weight: 600;
+  font-size: 1.1rem;
+  line-height: 1.25;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--glyph-muted);
+  overflow-wrap: anywhere;
+}
+
+.dayStatus {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+  font-family: var(--font-sign-stack);
+  font-weight: 600;
+  font-size: 1.1rem;
+  line-height: 1.2;
+}
+
+.dayStatus[data-tone="fixed"] {
+  color: var(--lamp-fixed);
+}
+
+.dayStatus[data-tone="swap"] {
+  color: var(--lamp-swap);
+}
+
+.inlineIcon {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+}
+
+/* Weather */
+.weather {
+  display: grid;
+  grid-template-columns: 2.1rem minmax(0, 1fr);
+  align-items: start;
+  gap: 0.6rem;
+  margin-top: 0.2rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--graphite-line);
+}
+
+.weatherIcon {
+  width: 2.1rem;
+  height: 2.1rem;
+}
+
+.weatherText {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.weatherText > p {
+  margin: 0;
+}
+
+.temps {
+  font-family: var(--font-sign-stack);
+  font-weight: 700;
+  font-size: 1.3rem;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.weatherLine,
+.weatherSource {
+  font-size: var(--step--1);
+  line-height: 1.4;
+  color: var(--glyph-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.weatherKind {
+  font-family: var(--font-sign-stack);
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--glyph);
+}
+
+/* Activities */
+.dayBody {
+  display: grid;
+  align-content: start;
+  gap: 0.9rem;
+  min-width: 0;
+  padding-left: 1.1rem;
+  border-left: 1px solid var(--graphite-line);
+}
+
+.acts {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.act {
+  display: grid;
+  grid-template-columns: 1.4rem minmax(0, 1fr) minmax(min-content, 10rem);
+  align-items: start;
+  gap: 0.3rem 0.8rem;
+  padding-block: 0.75rem;
+  border-top: 1px solid var(--graphite-line);
+}
+
+.act:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.act:last-child {
+  padding-bottom: 0;
+}
+
+.actMark {
+  display: grid;
+  place-items: center;
+  height: 1.5rem;
+}
+
+.actMark[data-tone="fixed"] {
+  color: var(--lamp-fixed);
+}
+
+.actIcon {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.depart {
+  transform: rotate(90deg);
+}
+
+.arrive {
+  transform: rotate(135deg);
+}
+
+.actMain {
+  min-width: 0;
+}
+
+.actTitle {
+  margin: 0;
+  font-family: var(--font-sign-stack);
+  font-weight: 700;
+  font-size: 1.25rem;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.actMeta {
+  margin: 0.15rem 0 0;
+  font-size: var(--step--1);
+  line-height: 1.45;
+  color: var(--glyph-muted);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.free {
+  margin: 0;
+  font-size: var(--step--1);
+  line-height: 1.5;
+  color: var(--glyph-muted);
+}
+
+.cost {
+  display: grid;
+  justify-items: end;
+  gap: 0.2rem;
+  margin: 0;
+  text-align: right;
+}
+
+.amountLine {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: baseline;
+  gap: 0.2rem 0.45rem;
+}
+
+.amount {
+  font-family: var(--font-sign-stack);
+  font-weight: 700;
+  font-size: 1.25rem;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.costSource {
+  font-size: var(--step--1);
+  line-height: 1.4;
+  color: var(--glyph-muted);
+}
+
+.fixed {
+  margin: 0;
+  font-family: var(--font-sign-stack);
+  font-weight: 600;
+  font-size: 1.1rem;
+  line-height: 1.35;
+  color: var(--lamp-fixed);
+}
+
+/* Events */
+.eventFoot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.9rem;
+  margin: 0.4rem 0 0;
+}
+
+.sourceTag {
+  padding: 0.02rem 0.4rem;
+  border: 1px solid currentColor;
+  font-family: var(--font-sign-stack);
+  font-weight: 600;
+  font-size: 0.95rem;
+  line-height: 1.3;
+  color: var(--glyph-muted);
+}
+
+.eventLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-family: var(--font-sign-stack);
+  font-weight: 600;
+  font-size: 1.05rem;
+  line-height: 1.3;
+  color: var(--glyph);
+}
+
+.eventLink:hover {
+  text-decoration-thickness: 3px;
+}
+
+.linkIcon {
+  width: 0.9rem;
+  height: 0.9rem;
+  transition: transform 0.35s var(--ease-out);
+}
+
+.eventLink:hover .linkIcon {
+  transform: translate(2px, -2px);
+}
+
+.nearby {
+  display: grid;
+  gap: 0.5rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--graphite-line);
+}
+
+.nearbyTitle {
+  margin: 0;
+  font-family: var(--font-sign-stack);
+  font-weight: 700;
+  font-size: 1.15rem;
+  line-height: 1.2;
+}
+
+.nearList {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.near {
+  min-width: 0;
+  padding: 0.65rem 0.8rem;
+  background: var(--row-inset);
+}
+
+.nearTitle {
+  margin: 0;
+  font-family: var(--font-sign-stack);
+  font-weight: 700;
+  font-size: 1.15rem;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.gate {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  font-family: var(--font-sign-stack);
+  font-weight: 600;
+  font-size: 1.1rem;
+  line-height: 1.3;
+}
+
+.gate a {
+  color: var(--glyph);
+}
+
+.gate a:hover {
+  text-decoration-thickness: 3px;
+}
+
+.dayNotes {
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--graphite-line);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.4rem;
+  margin: 0;
+  font-size: var(--step--1);
+  font-weight: 500;
+  color: var(--on-ground-muted);
+}
+
+.legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+/* ---------- Narrow ---------- */
+@container (max-width: 620px) {
+  .day {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 0.9rem;
+  }
+
+  .dayBody {
+    padding: 0.9rem 0 0;
+    border-left: 0;
+    border-top: 1px solid var(--graphite-line);
+  }
+
+  .sources {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@container (max-width: 440px) {
+  .day,
+  .strip {
+    padding-inline: 0.9rem;
+  }
+
+  .act {
+    grid-template-columns: 1.4rem minmax(0, 1fr);
+  }
+
+  .cost,
+  .fixed {
+    grid-column: 2;
+    justify-items: start;
+    text-align: left;
+  }
+
+  .amountLine {
+    justify-content: flex-start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .linkIcon {
+    transition: none;
+  }
+}
