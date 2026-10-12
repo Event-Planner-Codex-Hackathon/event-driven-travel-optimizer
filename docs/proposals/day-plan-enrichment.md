@@ -1,5 +1,7 @@
 # Proposal: day-by-day plan with events and weather (contract v1.1.0)
 
+Current integration uses contract **1.2.1** and the existing separate event/weather endpoints; see [integration handoff](../integration-handoff.md). The enrichment and match-evidence fields below remain proposals. The earlier frontend handoff at the bottom describes the preceding v1.0.0 cycle.
+
 Status: **proposed by the frontend, not agreed yet.** Nothing here changes `src/contract/trip.ts` until both owners agree. The frontend already reads these fields when they are present and works without them.
 
 ## Why
@@ -11,6 +13,22 @@ The trip page now shows the route as a day-by-day plan. To make it an end-to-end
 3. Weather for every city and day, which the planner also uses when it ranks and explains routes.
 
 ## Proposed fields
+
+### Personal interests — Product Lead requirement
+
+The frontend's "Use the SWITCH example" now includes live jazz, house/techno, small music nights, art/design events, street food, night markets, temples, architecture, and a moderate pace. These are the sample traveller's editable preferences, not statements about events that exist. They are submitted through the existing `text` field; the current rule-based parser does not yet extract or match these interests.
+
+For the jury demonstration, personalize suggestions from real retrieved listings around these interests and show a short, evidence-based "Why this matches you" explanation. A music-genre or category match must come from source metadata or a grounded description; do not claim a match solely because an event is in the same city.
+
+Backend coordination with Onur is required before changing the shared contract. Proposed preference fields are music genres, event categories, sightseeing/activity interests, exclusions, and preferred pace. Preserve those preferences through destination replacement and reoptimization. Suggested event responses should include the matching preferences and a reason grounded in the listing, alongside the existing provenance and nullable price information. Unknown ticket prices remain unknown and cannot certify budget fit. All extras must fit around the fixed event and travel/rest buffers.
+
+Until this is implemented and verified, the frontend can collect the description but must not claim the displayed listings were personalized. Explicit synthetic preview data remains a layout preview.
+
+### Route enrichment
+
+The Product Lead's example now requests three meaningfully different alternatives across Bangkok, Taipei, and Vietnam (Ho Chi Minh City as the proposed city), with at most one optional stop per itinerary. Three candidate cities are choices to compare, not three stops in one trip. Compare schedule, cost and sourced interest matches; do not substitute superficial hotel-style changes for route variety.
+
+Backend dependency: the current catalog has no Vietnam city, and parsing, normalization, planner enumeration and the override schema currently cap candidate cities at two. Onur needs to coordinate support for the third candidate, Vietnam city data/provenance, and selection of up to three distinct event-safe routes. If a requested city cannot fit the hard constraints, return an explicit reason and an eligible alternative; never force three countries by relaxing event dates, hiding unknown costs, or inventing inventory. The frontend continues to show only the alternatives actually returned.
 
 Add one optional field to `RouteOption`, and bump `CONTRACT_VERSION` to `1.1.0`:
 
@@ -52,3 +70,25 @@ The exact TypeScript types are in [`src/components/trip/dayPlan.ts`](../../src/c
 - Without `enrichment`, the day plan shows flights, hotel nights and the locked event days. A "Sources" strip marks Eventbrite, Ticketmaster, Web search and Weather as "Not connected yet".
 - With `enrichment`, each day shows weather, the event's sessions, nearby events, and the planner's notes. Event links are shown only to signed-in travellers.
 - `?preview=synthetic` on a trip page renders clearly labelled sample data ("Demo data — synthetic, not live offers") for layout review. It is never used as a fallback.
+
+## Frontend integration handoff — October 12, 2026
+
+Contract remains **v1.0.0**; no server, provider adapter or shared contract files were changed in this frontend cycle.
+
+Frontend ready:
+- All returned options appear together, with selected/recommended states, actual travel dates, hotel-night counts, estimated totals and backend-supplied tradeoffs. Selecting an option updates the day plan, costs and poster facts.
+- Structured input accepts up to 500 characters of interests via the existing `OptimizeBody.text` field (`My interests: …`), alongside authoritative structured overrides. Free-text input is unchanged.
+- The exact submitted brief is stored separately in browser-only `eh:brief:<requestId>` context. City replacement copies this display context to the new response. This does **not** preserve preferences server-side; Onur still needs structured preference extraction and retention in the agreed API.
+- Nearby event cards can show proposed optional `matchedInterests: string[]` and `matchReason: string` fields. Both must be present, and the reason must be grounded in the retrieved listing. Synthetic samples never get a real-personalization claim. These fields are frontend proposal types only in `dayPlan.ts`; agree them before changing the contract.
+- Missing event price notes display “Ticket price unknown.” The backend must still account for unknown event costs when calculating and describing budget feasibility.
+- Poster UI calls the existing `requestHero` client on explicit user action only. It handles queued, disabled, quota/error, timeout, ready and cached states, keeps artwork scoped to the selected route, and exports a 1080×1350 PNG. Route names, dates and event text are rendered locally from the backend result; no prices or generated claims are added to the poster.
+- `?preview=synthetic` explicitly shows local vector artwork for poster export checks and the existing synthetic day-plan preview. It makes no fal.ai calls. Downloaded previews also carry the synthetic label. It is not a live-integration proof.
+
+Integration blockers found during the actual example rehearsal:
+1. The expanded example returns Bangkok, Taipei and event-only routes. Vietnam is omitted; no distinct Vietnam option or omission explanation is returned yet.
+2. The exact prompt says “standard hotels” and a “moderately paced trip,” but the current parser normalizes lodging to `comfort` and pace to `relaxed`. Review interpretation and disclose any defaults or substitutions.
+3. Events/weather remain “Not connected yet”; genre/activity matching is still pending. Provide sourced listings, original retrieval times, nullable ticket prices, match evidence, and availability status through the agreed enrichment contract.
+4. Live flight/hotel provenance needs a coordinated contract update; v1 responses expose estimate categories, not quote freshness, tax coverage or offer expiry. The UI continues to label totals as estimates.
+5. Confirm server `FAL_KEY`, credits/call budget and public CDN cross-origin image access. Real generation and real-CDN PNG export were not exercised in this frontend cycle. If the CDN denies cross-origin export, the image remains viewable and the UI explains that downloading failed; no backend proxy was added.
+
+Start integration with one response containing three supported routes plus one real matching event. Preserve the fixed event and authoritative costs. Then test Vietnam, interest retention through reoptimization, source failures and one funded poster generation before judging. No backend implementation is implied by this handoff.

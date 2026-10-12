@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none" role="img" aria-labelledby="title">
+  <title id="title">Pookie — a P with a destination dot</title>
+  <rect width="32" height="32" rx="8" fill="#8fcbfe"/>
+  <path d="M9 26V13a7 7 0 1 1 7 7H9" stroke="#09162a" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="16" cy="13" r="2" fill="#09162a"/>
+</svg>

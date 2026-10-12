@@ -15,7 +15,7 @@ import { formatDay } from "@/lib/format";
 export const SOURCE_LABEL: Record<EstimateSource, string> = {
   heuristic: "Distance-based estimate",
   mock: "Synthetic planning rate",
-  provider: "Provider estimate",
+  provider: "Provider price observation",
 };
 
 export const STYLE_LABEL: Record<LodgingStyle, string> = {

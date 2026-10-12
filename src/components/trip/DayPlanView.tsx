@@ -1,7 +1,7 @@
 "use client";
 
 import { useId } from "react";
-import type { EstimateSource, Leg, Money, RouteOption, Stay } from "@/contract/trip";
+import type { EstimateSource, Leg, Money, PriceSource, RouteOption, Stay } from "@/contract/trip";
 import { formatDuration, formatMoney, formatWeekday } from "@/lib/format";
 import { useSession } from "@/lib/session";
 import { ArrowUpRight, Lock, Plane } from "../landing/Icons";
@@ -21,6 +21,7 @@ import styles from "./dayPlan.module.css";
 import tripStyles from "./trip.module.css";
 import { MODE_LABEL, SOURCE_LABEL, STYLE_LABEL, formatCompared, stopsLabel } from "./tripFormat";
 import { WeatherIcon } from "./WeatherIcon";
+import { PriceProvenance } from "./PriceProvenance";
 
 // Day-by-day plan. Dates, legs, stays and costs come from the route; events and weather only from `enrichment`.
 
@@ -97,7 +98,7 @@ function sourceRows(enrichment: RouteEnrichment | null): SourceRow[] {
     const found = listed.find((s) => s.name === name);
     // Synthetic previews never claim a source was reached.
     if (!enrichment || enrichment.synthetic || !found || found.status === "not-connected") {
-      return { name, tone: "off", text: enrichment?.synthetic ? "Sample only, not fetched" : "Not connected yet" };
+      return { name, tone: "off", text: enrichment?.synthetic ? "Sample only, not fetched" : "Not loaded in day plan" };
     }
     if (found.status === "unavailable") return { name, tone: "unavailable", text: "Unavailable" };
     return { name, tone: "ok", text: "Connected", fetchedAt: found.fetchedAt ?? undefined };
@@ -131,8 +132,7 @@ function Sources({ enrichment }: { enrichment: RouteEnrichment | null }) {
       </ul>
       {!enrichment ? (
         <p className={styles.sourcesNote}>
-          Event listings and weather appear here once the planner sends them. Dates, flights and hotel nights below
-          are already planned.
+          No day-plan enrichment was attached. Use Local events and weather below to request context for this route. Fixed-event sessions and personalized matching are not supplied yet.
         </p>
       ) : null}
     </div>
@@ -237,6 +237,7 @@ function Day({ day, option, signedIn }: { day: PlanDay; option: RouteOption; sig
                 <li key={event.id} className={styles.near}>
                   <p className={styles.nearTitle}>{event.title}</p>
                   <EventMeta event={event} />
+                  <EventMatch event={event} />
                   <EventFoot event={event} signedIn={signedIn} />
                 </li>
               ))}
@@ -294,13 +295,14 @@ function Weather({ weather }: { weather: WeatherDay }) {
 
 // ---------- Activities ----------
 
-function Cost({ money, source }: { money: Money; source: EstimateSource }) {
+function Cost({ money, source, provenance }: { money: Money; source: EstimateSource; provenance?: PriceSource }) {
   return (
     <p className={styles.cost}>
       <span className={styles.amountLine}>
-        <span className={styles.amount}>{formatMoney(money)}</span> <span className={site.estimateTag}>estimate</span>
+        <span className={styles.amount}>{formatMoney(money)}</span> <span className={site.estimateTag}>{source === "provider" ? "observation" : "estimate"}</span>
       </span>
       <span className={styles.costSource}>{SOURCE_LABEL[source]}</span>
+      <PriceProvenance source={provenance} />
     </p>
   );
 }
@@ -347,7 +349,7 @@ function Activity({ row, day, option, signedIn }: ActivityProps) {
               )}
             </p>
           </div>
-          <Cost money={leg.estimatedCost} source={leg.estimateSource} />
+          <Cost money={leg.estimatedCost} source={leg.estimateSource} provenance={leg.source} />
         </li>
       );
     }
@@ -382,7 +384,7 @@ function Activity({ row, day, option, signedIn }: ActivityProps) {
               <time dateTime={stay.checkOut}>{formatWeekday(stay.checkOut)}</time>
             </p>
           </div>
-          <Cost money={stay.estimatedCost} source={stay.estimateSource} />
+          <Cost money={stay.estimatedCost} source={stay.estimateSource} provenance={stay.source} />
         </li>
       );
     }
@@ -451,8 +453,23 @@ function Activity({ row, day, option, signedIn }: ActivityProps) {
 
 function EventMeta({ event }: { event: PlanEvent }) {
   const time = event.startTime ? (event.endTime ? `${event.startTime}–${event.endTime}` : event.startTime) : null;
-  const parts = [time, event.venue, event.priceNote].filter(Boolean);
+  const parts = [time, event.venue, event.priceNote || "Ticket price unknown"].filter(Boolean);
   return parts.length ? <p className={styles.actMeta}>{parts.join(" · ")}</p> : null;
+}
+
+function EventMatch({ event }: { event: PlanEvent }) {
+  const reason = typeof event.matchReason === "string" ? event.matchReason.trim() : "";
+  const interests = Array.isArray(event.matchedInterests)
+    ? event.matchedInterests.filter((value): value is string => typeof value === "string" && value.trim().length > 0)
+    : [];
+  if (!reason || !interests.length || event.source === "synthetic") return null;
+  return (
+    <div className={styles.eventMatch}>
+      <p><strong>Why this matches your interests</strong></p>
+      <p>{reason}</p>
+      <ul aria-label="Matching interests">{interests.map((interest) => <li key={interest}>{interest}</li>)}</ul>
+    </div>
+  );
 }
 
 function EventFoot({ event, signedIn }: { event: PlanEvent; signedIn: boolean }) {

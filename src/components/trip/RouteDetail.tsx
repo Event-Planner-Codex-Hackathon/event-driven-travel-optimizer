@@ -123,7 +123,7 @@ export function CostBreakdown({ trip, option }: { trip: TripResponse; option: Ro
       <div className={styles.costBody}>
         <table className={styles.costTable}>
           <caption className={styles.costCaption}>
-            All amounts are estimates in {cost.total.currency}, apart from the budget you set.
+            Amounts in {cost.total.currency}. Flight and hotel observations are labelled per line in the day plan. Allowances remain estimates; ticket costs may be unknown.
           </caption>
           <thead>
             <tr>
@@ -156,6 +156,7 @@ export function CostBreakdown({ trip, option }: { trip: TripResponse; option: Ro
             </tr>
           </tfoot>
         </table>
+        {option.convertedTotals?.length && trip.fx ? <p className={styles.costCaption}>Reference equivalents: {option.convertedTotals.map(formatMoney).join(" · ")}. {trip.fx.note}</p> : null}
 
         {assumptions.length ? (
           <div className={styles.assumptions}>

@@ -7,7 +7,8 @@ import { BoardStage } from "./BoardStage";
 import { HallBackdrop } from "./HallBackdrop";
 import type { BoardStateId } from "./boardStates";
 import { readFont, signFont } from "./fonts";
-import { ArrowDown, ArrowRight, Plane } from "./Icons";
+import { ArrowDown, ArrowRight } from "./Icons";
+import { PookieMark } from "../site/PookieMark";
 import styles from "./Landing.module.css";
 import { TripForm } from "./TripForm";
 
@@ -121,11 +122,11 @@ export function Landing() {
       </a>
 
       <header className={styles.signBand}>
-        <a className={styles.wordmark} href="#top" aria-label="EventHopper, back to top">
+        <a className={styles.wordmark} href="#top" aria-label="Pookie, back to top">
           <span className={styles.wordmarkTile}>
-            <Plane />
+            <PookieMark />
           </span>
-          <span className={styles.wordmarkText}>EventHopper</span>
+          <span className={styles.wordmarkText}>Pookie</span>
         </a>
         <nav className={styles.nav} aria-label="Main">
           <button type="button" className={`${styles.navLink} ${styles.navStory}`} onClick={() => goToStep(1)}>
@@ -155,7 +156,7 @@ export function Landing() {
             data-ended={ended || undefined}
           >
             <h1 id="hero-title" className="visually-hidden">
-              EventHopper: your event is fixed, your budget is fixed, the route can move.
+              Pookie: your event is fixed, your budget is fixed, the route can move.
             </h1>
 
             <BoardStage state={current.id} reducedMotion={reducedMotion} />
@@ -200,7 +201,7 @@ export function Landing() {
               <article data-caption className={styles.caption} data-active={step === 2 || undefined} aria-hidden={!stacked && step !== 2}>
                 <h2 className={styles.captionTitle}>Swap the stop. Keep the event.</h2>
                 <p className={styles.captionBody}>
-                  Choose Taipei instead of Bangkok and EventHopper replans the whole trip: route order, travel
+                  Choose Taipei instead of Bangkok and Pookie replans the whole trip: route order, travel
                   dates, hotel nights and totals. Singapore on 27–29 October stays exactly where it was.
                 </p>
               </article>
@@ -217,7 +218,7 @@ export function Landing() {
               <article data-caption className={styles.caption} data-active={step === 4 || undefined} aria-hidden={!stacked && step !== 4}>
                 <h2 className={styles.captionTitle}>We compare. The provider sells.</h2>
                 <p className={styles.captionBody}>
-                  When a route works for you, book it directly with the airline and the hotel. EventHopper never
+                  When a route works for you, book it directly with the airline and the hotel. Pookie never
                   sells tickets or asks for your card.
                 </p>
                 <div className={styles.actions}>
@@ -265,10 +266,10 @@ export function Landing() {
       </main>
 
       <footer className={styles.footer}>
-        <p className={styles.footerMark}>EventHopper</p>
+        <p className={styles.footerMark}>Pookie</p>
         <div className={styles.footerText}>
-          <p>EventHopper compares trips around a fixed event. It doesn&rsquo;t book, sell tickets or take payment details.</p>
-          <p>Every price is an estimate, not a live fare. Check the final price with the provider before you pay.</p>
+          <p>Pookie compares trips around a fixed event. It doesn&rsquo;t book, sell tickets or take payment details.</p>
+          <p>Prices are planning estimates or labelled provider observations. Check availability and the final price with the provider.</p>
         </div>
       </footer>
     </div>

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { DashboardView } from "@/components/dashboard/DashboardView";
 
 export const metadata: Metadata = {
-  title: "My trips — EventHopper",
+  title: "My trips — Pookie",
   description: "The trips you saved in this browser, with their estimated totals.",
 };
 

@@ -1,5 +1,39 @@
 # Frontend/backend integration handoff — 12 October 2026
 
+## Current Pookie integration
+
+The Product Lead authorized integration of the pushed work at about 14:43 Istanbul time. This cycle combines backend `2b277f3` through `a7db23c` with frontend `e67344c` in an isolated checkout on `codex/pookie-integration`. Contract **1.2.1** is the source of truth. Server code, API handlers, contract schemas and package manifests are unchanged from the reviewed backend/main revision.
+
+The Pookie name, blue palette, logo, comparison cards, retained travel brief and poster/export UI are preserved. New frontend connections:
+
+- `/api/session` supplies supported cities, provider feature flags and guest allowances. The browser profile remains separate from the anonymous server session.
+- City replacement and price checks send `baseRequest` plus `baseRequirementsVersion`. A response must be newer, belong to the displayed request and preserve the fixed event before it is saved. Concurrent price-check/city-change actions are disabled; unmounted requests are aborted.
+- `/price-check` is an explicit action for all three options. The UI displays backend notes, call/cache counts, replay state, and per-flight/per-hotel provenance: original observation time, retrieval time where different, cached/replayed status, description and public search link. Estimated allowances remain explicit even when every flight/hotel is provider-priced. Failed/missing observations remain estimates; there is no synthetic fallback.
+- Backend `comparison` summaries and non-comparable pricing warnings appear on the cards. `convertedTotals` use the backend's dated FX note; no conversion or ranking is performed in the frontend.
+- Fixed-event discovery calls `/api/events/search`; Eventbrite import calls `/api/events/import`. Only a plannable result with explicit city/dates can be confirmed into the form. Confirmation does not itself start planning or buy a ticket.
+- Local events/weather calls the existing endpoints on user action. The event browser excludes the fixed event and listings with known dates outside the visit, keeps partial/unmapped results visibly unconfirmed, and never inserts them into the itinerary. Ticket prices remain unknown. Search receipt time is distinct from unavailable provider observation age.
+- Weather displays the original fetch time, Open-Meteo attribution, forecast horizon and explicit unavailable/beyond-horizon days. It does not change routes, schedules or ranking. These independent responses are displayed separately from the unimplemented proposed day-plan enrichment schema.
+- The poster uses the existing hero endpoint and server feature/allowance flags. Generation is explicit; selected-route facts and PNG export remain frontend-owned. Real generation was not exercised.
+
+Verification in this cycle:
+
+- TypeScript, production build and **105 tests across 12 files** passed. Ten new tests cover the client wire contract, stale/unrelated/event-changing update rejection, replay/cache labels, estimated allowances, public links and event browsing scope.
+- Browser: fixed-event catalog search and confirmation → structured form with interests → three options → Bangkok-to-Taipei recalculation passed. SWITCH remained Singapore October 27–29, requirements advanced 1→2, and exact interests were retained.
+- Browser: production server restarted with replay mode and an empty observation directory; price-check fallback advanced requirements 2→3, retained the event/brief, reported zero provider calls and missing recordings, and kept estimates honestly labelled.
+- Open-Meteo and Frankfurter were exercised with free endpoints. Weather beyond October 27 stayed unknown. No SerpApi, Ticketmaster, Eventbrite or fal.ai external calls, paid calls, bookings, or observation recordings were made.
+- Phone viewport 390×844 showed no horizontal overflow; normal viewport restored. Poster PNG layout/export was checked in the preceding frontend cycle with explicit synthetic artwork, not a fal.ai result.
+
+Remaining before claiming a live demo:
+
+1. Confirm free-plan/credit budgets and run one controlled real-adapter check with Onur: flight, hotel, event source/import, and funded fal.ai artwork plus CDN export. Configuration flags alone do not verify those adapters.
+2. Vietnam is not in the backend catalog and the parser accepts at most two optional city candidates. The expanded three-destination prompt still exceeds that scope. Preference parsing can interpret "comfortable" as comfort lodging despite "standard hotels"; this remains backend-owned.
+3. Interest scoring, fixed-event session times, ticket prices and source observation timestamps are absent from the event contract. Keyword browsing is available; automated personalized event matching is not implemented.
+4. `/prices` and `/dev` remain backend diagnostic pages rather than the primary Pookie journey. Final 120-second rehearsal, submission and any deployment remain separate tasks.
+
+The previous handoff below is historical; its frontend/API-wiring gaps and browser-verification status describe the earlier `0314388` integration.
+
+## Previous integration
+
 Backend source: `2b277f3` (contract **1.2.1**). Frontend source: Product Lead branch `origin/codex-project-lead` at `0314388`. The only merge conflict was the temporary backend home page versus the completed frontend landing page; the frontend file was retained exactly. Product Lead's components, UI pages and browser libraries are byte-for-byte identical to that source branch. Backend/API/contract files are identical to the reviewed backend commit. Shared manifests contain the frontend's existing Three.js additions.
 
 ## Verified

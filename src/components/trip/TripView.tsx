@@ -2,16 +2,22 @@
 
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useRef } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import type { TripResponse } from "@/contract/trip";
 import { useHydrated } from "@/lib/browserStore";
 import { formatMoney, formatRange } from "@/lib/format";
 import { useSession } from "@/lib/session";
 import { useTripResponse } from "@/lib/trips";
+import { useBackendSession } from "@/lib/backendSession";
 import { ArrowRight, Lock } from "../landing/Icons";
 import { SiteShell, usePrefersReducedMotion } from "../site/SiteShell";
 import site from "../site/site.module.css";
 import { ChangeStop } from "./ChangeStop";
+import { TripBriefView } from "./TripBriefView";
+import { TripPoster } from "./TripPoster";
+import { PriceCheck } from "./PriceCheck";
+import { LocalContext } from "./LocalContext";
+import { pricingLabel } from "./pricingDisplay";
 import { OtherOptions } from "./OtherOptions";
 import { enrichmentOf, syntheticEnrichment } from "./dayPlan";
 import { DayPlan } from "./DayPlanView";
@@ -121,11 +127,12 @@ function TripReady({ trip, optionParam, preview }: ReadyProps) {
   const enrichment = preview ? syntheticEnrichment(featured) : enrichmentOf(featured);
   const request = trip.normalizedRequest!;
   const session = useSession();
+  const provider = useBackendSession();
+  const [revisionBusy, setRevisionBusy] = useState(false);
   const reducedMotion = usePrefersReducedMotion();
   const featuredHeading = useRef<HTMLHeadingElement>(null);
   const shownId = useRef(featured.id);
   const event = featured.event;
-  const others = trip.options.filter((o) => o.id !== featured.id);
 
   // When another route is chosen, bring it into view and move focus to its heading.
   useEffect(() => {
@@ -161,13 +168,16 @@ function TripReady({ trip, optionParam, preview }: ReadyProps) {
         </div>
 
         <p className={styles.metaLine}>
-          Budget {formatMoney(request.budget)} · All prices are estimates · Compared{" "}
+          Budget {formatMoney(request.budget)} · {pricingLabel(trip)} · Compared{" "}
           <time dateTime={trip.generatedAt}>{formatCompared(trip.generatedAt)}</time>
         </p>
         {hasSyntheticPrices(trip) ? <p className={styles.synthetic}>Demo data — synthetic, not live offers</p> : null}
         <ChangeSummary trip={trip} />
+        <TripBriefView requestId={trip.requestId} request={request} />
+        <PriceCheck trip={trip} session={provider.session} sessionError={provider.error} refresh={provider.refresh} locked={revisionBusy} onBusy={setRevisionBusy} />
       </div>
 
+      <OtherOptions requestId={trip.requestId} options={trip.options} selectedId={featured.id} recommendedId={trip.recommendedOptionId} preview={preview} />
       <div className={styles.layout}>
         <div className={styles.mainCol}>
           <FeaturedRoute
@@ -176,12 +186,13 @@ function TripReady({ trip, optionParam, preview }: ReadyProps) {
             signedIn={Boolean(session)}
             headingRef={featuredHeading}
           />
+          <TripPoster key={`${featured.id}-${preview}`} option={featured} preview={preview} providerSession={provider.session} onProviderUsed={provider.refresh} />
           <DayPlan option={featured} enrichment={enrichment} />
+          {!preview ? <LocalContext key={featured.id} option={featured} session={provider.session} refresh={provider.refresh} /> : null}
           <CostBreakdown trip={trip} option={featured} />
         </div>
         <div className={styles.asideCol}>
-          <ChangeStop trip={trip} request={request} featured={featured} />
-          <OtherOptions requestId={trip.requestId} options={others} recommendedId={trip.recommendedOptionId} />
+          <ChangeStop trip={trip} request={request} featured={featured} session={provider.session} locked={revisionBusy} onBusy={setRevisionBusy} />
           <SearchLinks trip={trip} option={featured} />
         </div>
       </div>

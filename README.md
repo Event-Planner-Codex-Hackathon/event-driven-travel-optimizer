@@ -1,4 +1,4 @@
-# EventHopper
+# Pookie
 
 Preparation workspace for the OpenAI × Istanbul Slush'D Codex Hackathon on October 12, 2026.
 
@@ -33,6 +33,8 @@ npm test                     # planner, parser and constraint tests
 Frankfurter (exchange rates) and Open-Meteo (weather) need no key.
 
 API contract: [docs/api-contract.md](docs/api-contract.md). Backend design and limitations: [docs/backend.md](docs/backend.md).
+
+The integrated Pookie journey uses backend contract **1.2.1**: confirm an event, create a trip, compare three options, replace the optional city, and explicitly check flight/hotel prices. Provider/replay source labels, allowances and guest limits stay visible. Local event search, Eventbrite import, weather and fal.ai poster generation use the existing server endpoints; provider calls start only through explicit actions. FX reference rates are fetched by the backend when planning. Ticket prices and automated interest matching are still unavailable, and Vietnam is outside the current catalog. See [current integration verification and limitations](docs/integration-handoff.md).
 
 ## Preparation documents
 

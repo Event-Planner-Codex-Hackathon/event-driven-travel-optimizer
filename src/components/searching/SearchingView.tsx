@@ -13,6 +13,7 @@ import type { OptimizeBody } from "@/contract/trip";
 import { useHydrated } from "@/lib/browserStore";
 import { formatDay, formatMoney, formatRange } from "@/lib/format";
 import { clearPendingSearch, saveTripResponse, takePendingSearch, type PendingSearch } from "@/lib/trips";
+import { saveTripBrief } from "@/lib/tripBrief";
 import styles from "./searching.module.css";
 
 // One board row per thing the planner really does. Nothing here is a live search.
@@ -251,6 +252,7 @@ function Searching() {
 
         if (response.status === "ready") {
           saveTripResponse(response);
+          saveTripBrief(response.requestId, search.brief ?? { description: search.body.text ?? "" });
           const href = `/trips/${encodeURIComponent(response.requestId)}`;
           router.prefetch(href);
           if (!(await holdUntil(MIN_BOARD_MS))) return;
@@ -328,7 +330,7 @@ function Searching() {
         <header className={site.pageHead}>
           <h1 {...headingProps}>No trip to compare yet</h1>
           <p className={site.pageIntro}>
-            Start with the trip form, and EventHopper will compare routes around your event here.
+            Start with the trip form, and Pookie will compare routes around your event here.
           </p>
           <div className={styles.actions}>
             <Link className={site.signButton} href="/#plan">
@@ -350,7 +352,7 @@ function Searching() {
         <header className={site.pageHead}>
           <h1 {...headingProps}>We need a bit more detail</h1>
           <p className={site.pageIntro}>
-            EventHopper doesn&rsquo;t guess required details. Add these on the form, then compare again.
+            Pookie doesn&rsquo;t guess required details. Add these on the form, then compare again.
           </p>
         </header>
         <section className={`${site.panel} ${styles.notice}`} aria-labelledby={`${headingId}-missing`}>
@@ -408,7 +410,7 @@ function Searching() {
           <div className={site.panelBody}>
             <p className={styles.message}>
               {phase.network
-                ? "The request didn’t reach EventHopper’s planner, so no routes were compared. Check your connection, then try again."
+                ? "The request didn’t reach Pookie’s planner, so no routes were compared. Check your connection, then try again."
                 : phase.message}
             </p>
             <p className={site.hint}>Try again sends the same trip details.</p>
@@ -435,7 +437,7 @@ function Searching() {
       <div className={styles.caption}>
         <h1 {...headingProps}>Comparing routes around your event</h1>
         <p className={site.pageIntro}>
-          EventHopper is checking your dates, keeping the event days fixed and estimating flights and hotel nights
+          Pookie is checking your dates, keeping the event days fixed and estimating flights and hotel nights
           for each route. Every price is an estimate, not a live fare.
         </p>
         <ul className={styles.legend} aria-label="Lamp key">

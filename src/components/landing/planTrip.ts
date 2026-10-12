@@ -19,6 +19,23 @@ export const MAX_BUDGET_TRY = 10_000_000;
 export const TEXT_MIN = 20;
 export const TEXT_MAX = 2000;
 
+/** Frontend example: personal interests travel with the existing free-text request. */
+export const SWITCH_DESCRIPTION_EXAMPLE =
+  "I'm leaving from Istanbul, departing around October 21, 2026 and back by November 1. " +
+  "I need to attend SWITCH in Singapore October 27–29, my total budget is 100,000 TRY, " +
+  "and I'm open to Bangkok, Taipei, or Vietnam (Ho Chi Minh City) as an optional stop.\n\n" +
+  "I like live jazz and electronic music, especially house and techno. " +
+  "I'd enjoy small live gigs, local music nights and art or design events rather than big crowded festivals.\n\n" +
+  "On holiday I want to try street food, explore night markets, see historic temples and interesting architecture, " +
+  "and spend some relaxed time in local neighbourhoods. I prefer a comfortable, moderately paced trip with standard hotels.\n\n" +
+  "Suggest events and things to see that match these interests on my free days and evenings. " +
+  "Give me three meaningfully different itinerary options, ideally one with Bangkok, one with Taipei, and one with Vietnam, " +
+  "with at most one optional stop in each trip. Compare their costs, schedules, music or event opportunities, and things to see. " +
+  "Explain how each option matches my interests, rather than just changing the hotel style. " +
+  "If a destination cannot fit the dates or budget, explain that and show a feasible alternative instead. " +
+  "Keep SWITCH attendance protected, allow time for travel and rest, and include any known activity or ticket costs in my budget. " +
+  "If a price or event listing is unavailable, tell me rather than assuming it is free.";
+
 export type TripDraft = {
   event: { name: string; city: string; startDate: string; endDate: string; sourceUrl: string };
   origin: Origin;

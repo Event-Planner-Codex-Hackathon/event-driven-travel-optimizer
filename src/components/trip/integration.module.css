@@ -1,0 +1,19 @@
+.context { padding: 22px; margin: 22px 0; background: var(--eh-ink, #101c30); color: #d9e8fa; border: 1px solid #496788; border-radius: 14px; font-size: 14px; line-height: 1.6; }
+.context h2 { margin: 0; font-size: 23px; color: #eff6ff; }
+.context h3 { margin: 0 0 8px; font-size: 18px; }
+.heading { display: flex; justify-content: space-between; align-items: center; gap: 15px; flex-wrap: wrap; }
+.heading > span, .note { font-size: 12px; color: #b1c9e2; }
+.context p { margin: 12px 0; }
+.context a { color: #a9d6ff; text-decoration: underline; }
+.provenance { display: flex; flex-direction: column; gap: 5px; font-size: 11px; font-weight: 400; line-height: 1.5; max-width: 330px; color: #b1c9e2; margin-top: 8px; overflow-wrap: anywhere; }
+.provenance strong { color: #c7e3ff; font-weight: 600; }
+.provenance a { color: #a9d6ff; text-decoration: underline; }
+.field { display: grid; gap: 6px; margin: 16px 0; }
+.field input, .field select { width: 100%; padding: 11px 12px; color: #e6f1ff; background: #142740; border: 1px solid #7495b7; border-radius: 8px; font: inherit; }
+.field input:focus-visible, .field select:focus-visible, .textButton:focus-visible { outline: 3px solid #a9d6ff; outline-offset: 3px; }
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin-top: 18px; }
+.listing { border: 1px solid #496788; border-radius: 10px; padding: 16px; margin: 12px 0; }
+.list { padding-left: 20px; }
+.textButton { color: #a9d6ff; background: none; border: none; text-decoration: underline; cursor: pointer; padding: 8px 0; font: inherit; }
+.weatherRow { padding: 9px 0; border-bottom: 1px solid #34506f; }
+@media (max-width: 650px) { .grid { grid-template-columns: 1fr; } .context { padding: 17px; } .heading { align-items: flex-start; } }

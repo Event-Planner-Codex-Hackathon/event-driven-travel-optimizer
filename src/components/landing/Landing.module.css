@@ -60,16 +60,17 @@
   display: inline-flex;
   align-items: center;
   gap: 0.6rem;
-  font-family: var(--font-sign-stack);
+  font-family: var(--font-read-stack);
   font-weight: 700;
-  font-size: 1.65rem;
+  font-size: 1.5rem;
   line-height: 1;
-  letter-spacing: 0.005em;
+  letter-spacing: -0.035em;
   text-decoration: none;
   color: var(--signal);
 }
 
 .wordmarkTile {
+  border-radius: var(--radius-small);
   display: grid;
   place-items: center;
   width: 2.1rem;
@@ -79,9 +80,8 @@
 }
 
 .wordmarkTile svg {
-  width: 1.4rem;
-  height: 1.4rem;
-  transform: rotate(90deg);
+  width: 1.85rem;
+  height: 1.85rem;
 }
 
 .signBand :focus-visible {
@@ -116,6 +116,7 @@
 }
 
 .navCta {
+  border-radius: var(--radius-control);
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
@@ -245,6 +246,7 @@
 }
 
 .fallbackBoard {
+  border-radius: var(--radius-card);
   --cols: 30;
   position: absolute;
   inset: 16% 3% 6%;
@@ -303,7 +305,7 @@
   place-items: center;
   aspect-ratio: 0.66;
   background: oklch(0.25 0.006 255);
-  color: oklch(0.95 0.008 95);
+  color: oklch(0.95 0.012 250);
   font-family: var(--font-sign-stack);
   font-weight: 600;
   font-size: calc(78cqi / var(--cols));
@@ -453,6 +455,7 @@
 }
 
 .synthetic {
+  border-radius: var(--radius-small);
   display: inline-block;
   margin: 0.9rem 0 0;
   padding: 0.25rem 0.65rem;
@@ -474,6 +477,7 @@
 }
 
 .signButton {
+  border-radius: var(--radius-control);
   appearance: none;
   display: inline-flex;
   align-items: stretch;
@@ -498,6 +502,7 @@
 }
 
 .signArrow {
+  border-radius: var(--radius-inset);
   display: grid;
   place-items: center;
   width: 2.7rem;
@@ -663,6 +668,7 @@
 }
 
 .planPanel {
+  border-radius: var(--radius-card);
   background: var(--enamel);
   color: var(--ink);
   box-shadow:
@@ -710,12 +716,20 @@
   transition: background-color 0.2s var(--ease-out), color 0.2s var(--ease-out);
 }
 
+.modeTab:first-child {
+  border-radius: var(--radius-control) 0 0 var(--radius-control);
+}
+
+.modeTab:last-child {
+  border-radius: 0 var(--radius-control) var(--radius-control) 0;
+}
+
 .modeTab + .modeTab {
   border-left-width: 0;
 }
 
 .modeTab:hover {
-  background: oklch(0.95 0.04 91);
+  background: oklch(0.95 0.025 245);
 }
 
 .modeTab[aria-selected="true"] {
@@ -800,13 +814,14 @@
 }
 
 .eventRow {
+  border-radius: var(--radius-card) var(--radius-card) 0 0;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 0.9rem 1.1rem;
   padding: 1rem 1.25rem;
   background: var(--graphite);
-  color: oklch(0.95 0.008 95);
+  color: oklch(0.95 0.012 250);
 }
 
 .eventLamp {
@@ -834,7 +849,7 @@
 .eventMeta {
   margin: 0.15rem 0 0;
   font-size: var(--step--1);
-  color: oklch(0.86 0.01 95);
+  color: oklch(0.86 0.02 250);
 }
 
 .eventFixed {
@@ -854,12 +869,13 @@
 }
 
 .eventEdit {
+  border-radius: var(--radius-control);
   appearance: none;
   min-height: 2.6rem;
   padding: 0.3rem 0.9rem;
   border: 2px solid oklch(0.5 0.008 255);
   background: transparent;
-  color: oklch(0.95 0.008 95);
+  color: oklch(0.95 0.012 250);
   font-family: var(--font-sign-stack);
   font-weight: 600;
   font-size: 1.1rem;
@@ -868,7 +884,7 @@
 }
 
 .eventEdit:hover {
-  border-color: oklch(0.95 0.008 95);
+  border-color: oklch(0.95 0.012 250);
 }
 
 .eventRow :focus-visible {
@@ -930,12 +946,12 @@
 }
 
 .input {
+  border-radius: var(--radius-control);
   width: 100%;
   min-width: 0;
   height: 3.25rem;
   padding: 0 0.85rem;
   border: 2px solid var(--ink);
-  border-radius: 0;
   background: var(--enamel);
   color: var(--ink);
   font-family: var(--font-read-stack);
@@ -946,7 +962,7 @@
 }
 
 .input:hover {
-  background: oklch(0.97 0.012 91);
+  background: oklch(0.97 0.012 245);
 }
 
 .input:focus-visible {
@@ -1046,6 +1062,7 @@
 }
 
 .chip > span {
+  border-radius: var(--radius-control);
   display: inline-flex;
   align-items: center;
   gap: 0.55rem;
@@ -1060,7 +1077,7 @@
 }
 
 .chip:hover > span {
-  background: oklch(0.95 0.04 91);
+  background: oklch(0.95 0.025 245);
 }
 
 .chip input:checked + span {
@@ -1074,6 +1091,7 @@
 }
 
 .chipBox {
+  border-radius: var(--radius-inset);
   display: grid;
   place-items: center;
   width: 1.1rem;
@@ -1121,7 +1139,7 @@
   gap: var(--space-s) var(--space-xl);
   padding: var(--space-xl) var(--gutter);
   background: var(--ink);
-  color: oklch(0.88 0.012 91);
+  color: oklch(0.88 0.025 250);
 }
 
 .footerMark {
