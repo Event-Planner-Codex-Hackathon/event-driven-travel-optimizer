@@ -9,6 +9,7 @@ import type { ProviderFailure } from "@/contract/trip";
 import { createReplayProvider, observationsDir, withRecording } from "./observations";
 import { createSerpApiProvider } from "./serpapi";
 import type { FlightOffer, FlightQuery, HotelOffer, HotelQuery, PriceProvider, ProviderResult } from "./types";
+import { takeFreeSerpSearch } from "./serpQuota";
 
 const CACHE_TTL_MS = 15 * 60_000;
 const HOUR_MS = 60 * 60_000;
@@ -78,6 +79,8 @@ export class PricingRuntime {
       if (budget.remaining <= 0) return this.fail("quota", "Live price lookups for this request reached their limit.");
       state.callTimes = state.callTimes.filter((t) => now - t < HOUR_MS);
       if (state.callTimes.length >= maxCallsPerHour()) return this.fail("quota", "Hourly live price limit reached. Try again later.");
+      if (this.provider.name === "serpapi" && !await takeFreeSerpSearch(process.env.SERPAPI_API_KEY ?? "")) return this.fail("quota", "Free SerpApi quota could not be confirmed; no price search was made.");
+      if (budget.remaining <= 0 || state.callTimes.length >= maxCallsPerHour()) return this.fail("quota", "Price search allowance reached; no search was made.");
       budget.remaining--;
       budget.calls++;
       state.callTimes.push(now);

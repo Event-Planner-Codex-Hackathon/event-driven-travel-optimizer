@@ -8,6 +8,7 @@ import type {
   HeroResponse,
   NormalizedRequest,
   NearbyPlacesResponse,
+  EventRecommendationsResponse,
   OptimizeBody,
   QuoteBody,
   QuoteResponse,
@@ -129,3 +130,7 @@ export const getNearbyPlaces = (route: RouteOption, signal?: AbortSignal) =>
   post<NearbyPlacesResponse>(`/api/routes/${encodeURIComponent(route.id)}/places`, {
     route: { cities: [...new Set(route.citySequence.filter((s) => s.purpose !== "origin").map((s) => s.city))] },
   }, signal);
+
+export const recommendEvents = (route: RouteOption, brief: string, signal?: AbortSignal) => post<EventRecommendationsResponse>(`/api/routes/${encodeURIComponent(route.id)}/events`, {
+  brief, route: { cities: route.citySequence.filter((city) => city.purpose !== "origin").map(({ city, arrivalDate, departureDate }) => ({ city, arrivalDate, departureDate })), event: route.event },
+}, signal);

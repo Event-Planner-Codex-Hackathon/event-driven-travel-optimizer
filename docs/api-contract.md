@@ -1,4 +1,6 @@
-# EventHopper API contract — v1.3.0
+# Pookie API contract — v1.4.0
+
+v1.4 adds `POST /api/routes/{routeId}/events` for grounded preference-based discovery. Its request and response types are `recommendEventsBodySchema` and `EventRecommendationsResponse` in the source of truth below. It never modifies route feasibility or budget. Event candidates may carry real descriptions, raw date text, observation/cache provenance and listed price notes; `web` means an unconfirmed public discovery page, not a verified ticket offer. The live frontend chains price-check after optimize/reoptimize, and OpenAI uses a persistent conservative funding allowance. See [current handoff](integration-handoff.md) for exact wiring and limitations.
 
 Source of truth: [`src/contract/trip.ts`](../src/contract/trip.ts) (types + request validation). A typed browser client is in [`src/contract/client.ts`](../src/contract/client.ts); sample requests are in [`src/contract/demo.ts`](../src/contract/demo.ts). Change fields, nullability or status values only after both owners agree, and bump `CONTRACT_VERSION`.
 

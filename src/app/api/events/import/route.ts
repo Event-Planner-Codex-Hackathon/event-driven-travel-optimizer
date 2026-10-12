@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { eventImportBodySchema, type EventImportResponse } from "@/contract/trip";
-import { importEventbrite } from "@/server/events";
+import { eventbriteToken, importEventbrite } from "@/server/events";
 import { attachGuestCookie, consume, guestFromRequest, refund } from "@/server/guest";
 import { apiError, readBodyOr413 } from "@/server/http";
 
@@ -15,7 +15,7 @@ export async function POST(req: Request) {
   const parsed = eventImportBodySchema.safeParse(body.body);
   if (!parsed.success) return apiError(400, "invalid_body", "Expected { url }.", parsed.error.issues, { guest });
 
-  const token = process.env.EVENTBRITE_TOKEN || undefined;
+  const token = eventbriteToken();
   if (!token) return apiError(503, "provider_unavailable", "Eventbrite import is not configured on this server.", undefined, { guest });
   const allowed = consume(guest, "eventSearch");
   if (!allowed.ok) return apiError(429, "rate_limited", "Event lookups are limited for guests. Try again later.", undefined, { guest, retryAfterSeconds: allowed.retryAfterSeconds });

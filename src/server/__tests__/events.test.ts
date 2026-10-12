@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+vi.mock("../providers/serpQuota", () => ({ takeFreeSerpSearch: async () => true }));
 import {
   eventbriteIdFrom,
   importEventbrite,

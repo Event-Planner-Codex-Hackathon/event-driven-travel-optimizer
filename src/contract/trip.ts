@@ -7,7 +7,7 @@
  */
 import { z } from "zod";
 
-export const CONTRACT_VERSION = "1.3.0";
+export const CONTRACT_VERSION = "1.4.0";
 
 // ---------- Primitive types ----------
 
@@ -459,7 +459,7 @@ export const eventImportBodySchema = z.object({
   url: z.string().trim().min(1).max(500),
 });
 
-export type EventSource = "catalog" | "google_events" | "ticketmaster" | "eventbrite";
+export type EventSource = "catalog" | "google_events" | "ticketmaster" | "eventbrite" | "web";
 
 export type EventCandidate = {
   /** Source-scoped id, e.g. "ticketmaster:G5v..." */
@@ -472,6 +472,11 @@ export type EventCandidate = {
   catalogCity?: string;
   countryCode?: string;
   venue?: string;
+  description?: string;
+  dateText?: string;
+  observedAt?: string;
+  fromCache?: boolean;
+  priceNote?: string;
   /** Local calendar dates (inclusive). Missing when the source did not give a parseable date. */
   startDate?: string;
   endDate?: string;
@@ -546,3 +551,14 @@ export type NearbyPlacesResponse = {
   attribution: string;
   note: string;
 };
+
+export const recommendEventsBodySchema = z.object({
+  brief: z.string().trim().min(2).max(2000),
+  route: z.object({
+    cities: z.array(z.object({ city: z.string().min(1).max(60), arrivalDate: isoDate, departureDate: isoDate })).min(1).max(2),
+    event: z.object({ name: z.string().min(1).max(120), city: z.string().min(1).max(60), startDate: isoDate, endDate: isoDate }),
+  }),
+});
+export type EventInterest = { label: string; quote: string; query: string; keywords: string[] };
+export type RecommendedEvent = { event: EventCandidate; matchedInterests: string[]; evidence: string[]; matchReason: string; timing: "during-visit" | "dates-unconfirmed"; eventDayConflict: boolean };
+export type EventRecommendationsResponse = { routeId: string; interests: EventInterest[]; recommendations: RecommendedEvent[]; sources: EventSourceStatus[]; providerCalls: number; interpretation: "openai" | "unavailable"; notes: string[] };

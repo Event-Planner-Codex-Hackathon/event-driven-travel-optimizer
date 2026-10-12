@@ -30,7 +30,7 @@ export function TripBriefView({ requestId, request }: { requestId: string; reque
       ) : null}
       <p className={styles.briefNote}>
         {brief?.description || brief?.interests
-          ? "Your interests are kept with this trip when you change the stop. Personalized event matching is awaiting integration."
+          ? "Your interests are kept with this trip when you change the stop. See matched event listings below; dates and ticket costs still need confirmation."
           : "Music and activity interests were not saved with this trip. Add them in a new trip description."}
       </p>
     </section>

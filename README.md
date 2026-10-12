@@ -1,5 +1,7 @@
 # Pookie
 
+Current integrated contract: **1.4.0**. Creating or replacing a trip now checks configured real flight/hotel prices before results. Personalized event suggestions use grounded interests plus retrieved listings; unconfirmed dates and unknown ticket prices stay explicit. See [live integration handoff](docs/integration-handoff.md) for the endpoint, runtime configuration, observed live data and final unverified changes.
+
 Preparation workspace for the OpenAI × Istanbul Slush'D Codex Hackathon on October 12, 2026.
 
 The planned product compares trips around a fixed event, combining flights, accommodation, ticket costs when known, and optional cities. Deterministic code will check schedules and calculate costs; AI will interpret requests and explain the results.
