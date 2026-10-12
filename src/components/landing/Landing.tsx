@@ -7,7 +7,7 @@ import { BoardStage } from "./BoardStage";
 import { HallBackdrop } from "./HallBackdrop";
 import type { BoardStateId } from "./boardStates";
 import { readFont, signFont } from "./fonts";
-import { ArrowDown, ArrowRight } from "./Icons";
+import { ArrowDown, Plane } from "./Icons";
 import { PookieMark } from "../site/PookieMark";
 import styles from "./Landing.module.css";
 import { TripForm } from "./TripForm";
@@ -137,7 +137,7 @@ export function Landing() {
           </Link>
           <a className={styles.navCta} href="#plan">
             Plan a trip
-            <ArrowRight className={styles.navArrow} />
+            <Plane direction="forward" className={styles.navArrow} />
           </a>
         </nav>
       </header>
@@ -169,7 +169,7 @@ export function Landing() {
                 <div className={styles.actions}>
                   <a className={styles.signButton} href="#plan" tabIndex={stacked || step === 0 ? undefined : -1}>
                     <span className={styles.signArrow}>
-                      <ArrowRight />
+                      <Plane direction="forward" />
                     </span>
                     <span>Plan around my event</span>
                   </a>
@@ -224,7 +224,7 @@ export function Landing() {
                 <div className={styles.actions}>
                   <a className={styles.signButton} href="#plan" tabIndex={stacked || step === 4 ? undefined : -1}>
                     <span className={styles.signArrow}>
-                      <ArrowRight />
+                      <Plane direction="forward" />
                     </span>
                     <span>Plan around my event</span>
                   </a>

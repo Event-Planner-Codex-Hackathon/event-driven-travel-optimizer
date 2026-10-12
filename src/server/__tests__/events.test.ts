@@ -10,6 +10,7 @@ import {
   resetEventCache,
   searchCatalog,
   searchEvents,
+  searchEventPages,
 } from "../events";
 import { resetPricingState } from "../providers/runtime";
 
@@ -82,7 +83,7 @@ describe("aggregate search", () => {
     let calls = 0;
     const fetcher = (async (url: URL) => {
       calls++;
-      expect(String(url)).toContain("engine=google_events");
+      expect(String(url)).toContain("engine=google&");
       return json({ events_results: [{ title: "SWITCH 2026", date: { start_date: "Oct 27", when: "Oct 27, 2026 – 29" }, address: ["Singapore"] }, { title: "Other Expo", date: { start_date: "Oct 28" }, address: ["Singapore"] }] });
     }) as unknown as typeof fetch;
     const first = await searchEvents("SWITCH", "Singapore", { serpApiKey: "k", today: TODAY, fetcher });
@@ -182,4 +183,21 @@ describe("event review regressions", () => {
 it("preserves explicit end years and rejects reversed explicit ranges", () => {
   expect(parseGoogleEventDates({ when: "Oct 27 2026 – Oct 26 2026" }, TODAY)).toEqual({ startDate: "2026-10-27", partial: true });
   expect(parseGoogleEventDates({ when: "Oct 27 2026 – Oct 29 2027" }, TODAY)).toEqual({ startDate: "2026-10-27", endDate: "2027-10-29", partial: false });
+});
+
+it("reads Google Search string dates and string venues without inventing a year", () => {
+  const [item] = parseGoogleEvents({ events_results: [{ title: "Synthetic jazz night", type: "Jazz concert", date: "Oct 26", venue: "Singapore Jazz Club" }] }, TODAY);
+  expect(item).toMatchObject({ catalogCity: "Singapore", venue: "Singapore Jazz Club", dateText: "Oct 26", description: "Jazz concert", dateConfidence: "partial", plannable: false });
+  expect(item.startDate).toBeUndefined();
+});
+it("reuses organic pages from the same Google call and keeps dated page clues unconfirmed", async () => {
+  const fetcher = vi.fn(async () => json({ events_results: [], organic_results: [{ title: "Synthetic Singapore jazz night", link: "https://example.org/events/singapore-2026-10-17-tickets", snippet: "Jazz concert on Saturday, October 17, 2026 at 9 PM in Singapore." }] }));
+  const result = await searchEvents("jazz events October 2026", "Singapore", { serpApiKey: "test", today: TODAY, fetcher });
+  const pages = await searchEventPages("jazz events October 2026", "Singapore", "test", fetcher);
+  expect(result.meteredCalls).toBe(1);
+  expect(pages.metered).toBe(0);
+  expect(fetcher).toHaveBeenCalledTimes(1);
+  expect(pages.results[0]).toMatchObject({ source: "web", dateConfidence: "partial", plannable: false, fromCache: true });
+  expect(pages.results[0].dateText).toContain("October 17, 2026");
+  expect(pages.results[0].startDate).toBeUndefined();
 });

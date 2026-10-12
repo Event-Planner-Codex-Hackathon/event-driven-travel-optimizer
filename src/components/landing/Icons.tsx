@@ -41,10 +41,12 @@ export function Lock(props: IconProps) {
   );
 }
 
-export function Plane(props: IconProps) {
+export function Plane({ direction, ...props }: IconProps & { direction?: "forward" }) {
   return (
     <Svg {...props}>
-      <path d="M21.5 15.2v-2l-8.25-5V3.4a1.6 1.6 0 0 0-3.2 0v4.8L1.8 13.2v2l8.25-2.55v4.85L7.8 19.2v1.6l3.85-1.1 3.85 1.1v-1.6l-2.25-1.7v-4.85z" />
+      <g transform={direction === "forward" ? "rotate(90 12 12)" : undefined}>
+        <path d="M21.5 15.2v-2l-8.25-5V3.4a1.6 1.6 0 0 0-3.2 0v4.8L1.8 13.2v2l8.25-2.55v4.85L7.8 19.2v1.6l3.85-1.1 3.85 1.1v-1.6l-2.25-1.7v-4.85z" />
+      </g>
     </Svg>
   );
 }

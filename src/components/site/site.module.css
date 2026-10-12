@@ -293,19 +293,30 @@
   border-radius: var(--radius-control);
   appearance: none;
   display: inline-flex;
-  align-items: stretch;
+  align-items: center;
   min-height: 3.25rem;
-  padding: 0;
+  padding: 0.75rem 1.1rem;
   border: 0;
   background: var(--signal);
   color: var(--ink);
   font-family: var(--font-sign-stack);
   font-weight: 700;
   font-size: 1.3rem;
-  line-height: 1;
+  line-height: 1.25;
   text-decoration: none;
   cursor: pointer;
   transition: background-color 0.25s var(--ease-out);
+}
+
+.signButton:has(> .signArrow) {
+  align-items: stretch;
+  padding: 0;
+}
+
+.signButton {
+  max-width: 100%;
+  text-align: left;
+  white-space: normal;
 }
 
 .signButton > span:last-child {
@@ -315,6 +326,7 @@
 }
 
 .signArrow {
+  flex-shrink: 0;
   border-radius: var(--radius-inset);
   display: grid;
   place-items: center;

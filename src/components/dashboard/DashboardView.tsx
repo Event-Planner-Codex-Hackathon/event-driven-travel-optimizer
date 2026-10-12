@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
-import { ArrowRight } from "@/components/landing/Icons";
+import { Plane } from "@/components/landing/Icons";
 import { SignInPanel } from "@/components/site/SignInPanel";
 import { SiteShell } from "@/components/site/SiteShell";
 import site from "@/components/site/site.module.css";
@@ -60,7 +60,7 @@ function Dashboard() {
           <div className={styles.headActions}>
             <Link className={site.signButton} href="/#plan">
               <span className={site.signArrow}>
-                <ArrowRight />
+                <Plane direction="forward" />
               </span>
               <span>Plan a new trip</span>
             </Link>
@@ -255,7 +255,7 @@ function TripRow({
         <div className={styles.actions}>
           <Link ref={openRef} className={styles.open} href={href}>
             Open<span className="visually-hidden"> {trip.title}, {trip.eventName}</span>
-            <ArrowRight className={styles.openArrow} />
+            <Plane direction="forward" className={styles.openArrow} />
           </Link>
           <button type="button" className={`${site.textButton} ${styles.remove}`} onClick={onRemove}>
             Remove<span className="visually-hidden"> {trip.title}, {trip.eventName}</span>
@@ -282,7 +282,7 @@ function EmptyState() {
         <div>
           <Link className={`${site.signButton} ${site.signButtonDark}`} href="/#plan">
             <span className={site.signArrow}>
-              <ArrowRight />
+              <Plane direction="forward" />
             </span>
             <span>Plan a trip</span>
           </Link>

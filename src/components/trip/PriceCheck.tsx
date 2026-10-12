@@ -45,7 +45,7 @@ export function PriceCheck({ trip, session, sessionError, refresh, locked, onBus
       <p>Totals include estimated food, local transport and contingency. Ticket costs may be unknown; this is not a confirmed booking price.</p>
       {trip.pricing?.notes.length ? <ul>{trip.pricing.notes.map((note) => <li key={note}>{note}</li>)}</ul> : null}
       {trip.pricing?.checkedAt ? <p>Checked <time dateTime={trip.pricing.checkedAt}>{new Date(trip.pricing.checkedAt).toLocaleString("en-GB")}</time> · {trip.pricing.providerCalls} provider calls · {trip.pricing.cacheHits} cache hits</p> : null}
-      <button type="button" className={`${site.signButton} ${site.signButtonDark}`} disabled={busy || locked || !available || !allowance?.remaining} onClick={check}>
+      <button type="button" className={`${site.signButton} ${site.signButtonDark} ${styles.priceButton}`} disabled={busy || locked || !available || !allowance?.remaining} onClick={check}>
         {busy ? "Checking prices…" : replay ? "Check recorded flight & hotel prices" : "Check flight & hotel prices"}
       </button>
       <p className={styles.note} role="status">{busy ? "Your event remains fixed. All three options will be checked and ranked again." : sessionError ? "Provider controls unavailable. Retry the connection below." : !session ? "Checking provider availability…" : !available ? "Provider pricing is not configured. Planning estimates remain visible." : `${allowance?.remaining ?? 0} of ${allowance?.max ?? 0} checks remaining per ${allowance?.windowMinutes ?? 60} minutes. ${replay ? "Recorded observations, not current prices." : "Starts provider searches only when pressed; server quotas apply."}`}</p>

@@ -17,3 +17,7 @@
 .textButton { color: #a9d6ff; background: none; border: none; text-decoration: underline; cursor: pointer; padding: 8px 0; font: inherit; }
 .weatherRow { padding: 9px 0; border-bottom: 1px solid #34506f; }
 @media (max-width: 650px) { .grid { grid-template-columns: 1fr; } .context { padding: 17px; } .heading { align-items: flex-start; } }
+
+.priceButton { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 12px 20px; background: #d8ebff; color: #10243a; border-color: #a9d6ff; line-height: 1.4; text-align: center; }
+.priceButton:hover:not(:disabled) { background: #eff7ff; color: #10243a; }
+.priceButton:disabled { opacity: .6; }

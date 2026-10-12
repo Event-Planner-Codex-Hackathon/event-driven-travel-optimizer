@@ -122,3 +122,9 @@ Weather ranges are checked before daily arrays are allocated, and missing foreca
 No real-key OpenAI or Geoapify call has been made during this implementation. Tests use synthetic responses and verify grounding, event precedence, form precedence, no-spend gating, failed-attempt accounting, quota refunds, cache sharing and secret-safe output. Main product UI wiring for nearby places remains with Product Lead; the existing text form can use OpenAI through its existing optimize endpoint when authorized/configured.
 
 Primary implementation references: [OpenAI structured outputs](https://developers.openai.com/api/docs/guides/structured-outputs?api-mode=responses), [GPT-6.1 Sol](https://developers.openai.com/api/docs/models/gpt-6.1-sol), [reasoning token limits](https://developers.openai.com/api/docs/guides/reasoning), [Geoapify Places](https://apidocs.geoapify.com/docs/places/). Model/price documentation was checked on 12 October 2026; the application does not estimate API dollar charges from outdated hardcoded prices.
+
+### Event discovery adapter update (October 12)
+
+SerpApi deprecated its standalone `google_events` engine in August 2026. The adapter now requests `engine=google` and parses `events_results`, including string dates/venues. The contract source identifier remains `google_events`; contract v1.4.0 is unchanged. See [provider migration notice](https://serpapi.com/blog/serpapi-weekly-changelog-august-24-30-2026/) and [current response examples](https://serpapi.com/events-results).
+
+Organic discovery pages from the same response are cached and reused without a second search when structured results fail the visit/interest filters. Quota blocks do not trigger a fallback provider retry. Missing years remain unconfirmed. Corroborating ISO dates in an event URL and its snippet are used only to exclude out-of-window pages, never to declare an offer verified.

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { recommendEvents } from "@/contract/client";
 import type { EventRecommendationsResponse, RouteOption, SessionResponse } from "@/contract/trip";
-import { useTripBrief } from "@/lib/tripBrief";
+import { saveTripBrief, useTripBrief } from "@/lib/tripBrief";
 import { formatRange } from "@/lib/format";
 import { EVENT_SOURCE_NAMES, EVENT_STATUS_NAMES } from "./contextDisplay";
 import { publicSourceUrl } from "./pricingDisplay";
@@ -16,6 +16,7 @@ export function PersonalEvents({ requestId, option, session, onUsed }: { request
   const [response, setResponse] = useState<EventRecommendationsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [interestInput, setInterestInput] = useState("");
   const [retry, setRetry] = useState(0);
   const started = useRef(false);
   useEffect(() => {
@@ -23,7 +24,7 @@ export function PersonalEvents({ requestId, option, session, onUsed }: { request
     if (!session.features.aiParsing || !session.features.eventSearch) return;
     started.current = true;
     const controller = new AbortController();
-    setBusy(true); setError(null);
+    setBusy(true); setError(null); setResponse(null);
     const timer = window.setTimeout(() => { setError("Event recommendations timed out. Try again when ready."); controller.abort(); setBusy(false); }, 60_000);
     recommendEvents(option, text.slice(0, 2000), controller.signal).then((result) => {
       if (controller.signal.aborted) return;
@@ -36,7 +37,11 @@ export function PersonalEvents({ requestId, option, session, onUsed }: { request
     <h2>Events matched to your interests</h2>
     <p>Real retrieved listings, matched against the interests in your brief. Suggestions stay separate from your fixed event and trip budget.</p>
     {busy ? <p role="status">Reading your interests and searching events for this route…</p> : null}
-    {!session ? <p>Checking event-search availability…</p> : !text ? <p>No interest brief was saved. Use the keyword search below.</p> : !session.features.aiParsing || !session.features.eventSearch ? <p>AI interpretation or event search is unavailable on this server. Use the manual keyword search below.</p> : null}
+    {!session ? <p>Checking event-search availability…</p> : !text ? <p>Add your interests below to find matching events.</p> : !session.features.aiParsing || !session.features.eventSearch ? <p>AI interpretation or event search is unavailable on this server. Use the manual keyword search below.</p> : null}
+    {!text && session?.features.aiParsing && session.features.eventSearch ? <form onSubmit={(e) => { e.preventDefault(); if (interestInput.trim().length >= 2) saveTripBrief(requestId, { description: interestInput.trim(), interests: interestInput.trim() }); }}>
+      <label className={styles.field}>What would you like to experience?<input value={interestInput} onChange={(e) => setInterestInput(e.target.value)} placeholder="Live jazz, art exhibitions, food festivals…" minLength={2} maxLength={2000} required /></label>
+      <button className={styles.textButton} type="submit">Find matching events</button>
+    </form> : null}
     {error ? <><p className={site.error} role="alert">{error}</p><button type="button" className={styles.textButton} onClick={() => setRetry((value) => value + 1)}>Retry event recommendations</button></> : null}
     {response ? <>
       {!busy ? <button type="button" className={styles.textButton} onClick={() => setRetry((value) => value + 1)}>Refresh matched listings</button> : null}
@@ -47,6 +52,7 @@ export function PersonalEvents({ requestId, option, session, onUsed }: { request
         const event = match.event;
         const url = publicSourceUrl(event.sourceUrl);
         return <article className={styles.listing} key={event.id}>
+          {event.source === "web" ? <p className={styles.note}>Discovery page · dates unconfirmed</p> : null}
           <h3>{event.name}</h3>
           <p>{event.catalogCity ?? event.city} · {event.venue ?? "Venue as listed by source"}</p>
           <p>{event.startDate && event.endDate ? formatRange(event.startDate, event.endDate) : event.dateText ?? "Date unknown"}</p>
@@ -54,7 +60,7 @@ export function PersonalEvents({ requestId, option, session, onUsed }: { request
           <p className={styles.note}>{match.timing === "dates-unconfirmed" ? "Year or full date range unconfirmed; check the source before attending." : "Dates overlap your visit; attendance is not booked."} {match.eventDayConflict ? "Overlaps the fixed event; confirm session times." : ""}</p>
           <p>{event.priceNote ?? "Ticket price unknown"} · not added to the trip total</p>
           <p className={styles.note}>{EVENT_SOURCE_NAMES[event.source]} · {event.fromCache ? "cached observation" : "retrieved listing"}{event.observedAt ? ` · observed ${new Date(event.observedAt).toLocaleString("en-GB")}` : " · source observation age unknown"}</p>
-          {url ? <a href={url} target="_blank" rel="noreferrer">Inspect event and tickets ↗</a> : null}
+          {url ? <a href={url} target="_blank" rel="noreferrer">{event.source === "web" ? "Explore source listings ↗" : "Inspect event and tickets ↗"}</a> : null}
         </article>;
       })}
     </> : null}

@@ -9,7 +9,7 @@ import { formatMoney, formatRange } from "@/lib/format";
 import { useSession } from "@/lib/session";
 import { useTripResponse } from "@/lib/trips";
 import { useBackendSession } from "@/lib/backendSession";
-import { ArrowRight, Lock } from "../landing/Icons";
+import { Plane, Lock } from "../landing/Icons";
 import { SiteShell, usePrefersReducedMotion } from "../site/SiteShell";
 import site from "../site/site.module.css";
 import { ChangeStop } from "./ChangeStop";
@@ -78,7 +78,7 @@ function PlanButton({ label = "Plan a trip" }: { label?: string }) {
     <div>
       <Link className={site.signButton} href="/#plan">
         <span className={site.signArrow}>
-          <ArrowRight />
+          <Plane direction="forward" />
         </span>
         <span>{label}</span>
       </Link>

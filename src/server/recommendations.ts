@@ -64,12 +64,12 @@ export async function recommendForRoute(route: RouteOption, brief: string, fetch
   const sources: EventRecommendationsResponse["sources"] = [];
   let providerCalls = 0;
   // Bounded search: at most two interest queries per city, and at most two cities.
-  for (const visit of visits) {
+  for (const visit of visits.slice(0, 2)) {
     for (const interest of interests.slice(0, 2)) {
       const month = new Date(`${visit.arrivalDate}T00:00:00Z`).toLocaleString("en-GB", { month: "long", timeZone: "UTC" });
       const result = await searchEvents(`${interest.query} events ${month} ${visit.arrivalDate.slice(0, 4)}`.slice(0, 100), visit.city, { serpApiKey: process.env.SERPAPI_API_KEY, ticketmasterKey: process.env.TICKETMASTER_API_KEY, today: todayLocal(), fetcher });
       providerCalls += result.meteredCalls; sources.push(...result.sources);
-      if (!result.results.length && process.env.SERPAPI_API_KEY && !sources.some((source) => source.source === "web" && source.status === "quota")) {
+      if (!result.results.some((event) => matchListing(event, interests, visit, route.event)) && process.env.SERPAPI_API_KEY && !sources.some((source) => (source.source === "web" || source.source === "google_events") && source.status === "quota")) {
         const pages = await searchEventPages(`${interest.query} events ${month} ${visit.arrivalDate.slice(0, 4)}`, visit.city, process.env.SERPAPI_API_KEY, fetcher);
         result.results.push(...pages.results); sources.push(pages.status); providerCalls += pages.metered;
       }

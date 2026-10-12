@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSyncExternalStore } from "react";
 import { HallBackdrop } from "../landing/HallBackdrop";
 import { readFont, signFont } from "../landing/fonts";
-import { ArrowRight } from "../landing/Icons";
+import { Plane } from "../landing/Icons";
 import { signOut, useSession } from "@/lib/session";
 import { PookieMark } from "./PookieMark";
 import styles from "./site.module.css";
@@ -72,7 +72,7 @@ export function SiteHeader({ current }: { current?: "plan" | "trips" }) {
         ) : null}
         <Link className={styles.navCta} href="/#plan" aria-current={current === "plan" ? "page" : undefined}>
           Plan a trip
-          <ArrowRight className={styles.navArrow} />
+          <Plane direction="forward" className={styles.navArrow} />
         </Link>
       </nav>
     </header>

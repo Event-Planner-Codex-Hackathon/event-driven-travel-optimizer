@@ -24,3 +24,9 @@ describe("grounded event recommendations", () => {
     expect(matchListing({ ...event, startDate: "2026-10-27", endDate: "2026-10-27" }, interests, visit, fixed)?.eventDayConflict).toBe(true);
   });
 });
+
+it("excludes a corroborated out-of-window web event and preserves unconfirmed discovery pages", () => {
+  const page = { ...event, source: "web" as const, startDate: undefined, endDate: undefined, dateConfidence: "partial" as const, plannable: false };
+  expect(matchListing({ ...page, dateText: "Jazz concert on Saturday, October 17, 2026 at 9 PM in Singapore." }, interests, visit, fixed)).toBeNull();
+  expect(matchListing(page, interests, visit, fixed)?.timing).toBe("dates-unconfirmed");
+});

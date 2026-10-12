@@ -8,7 +8,7 @@ import { formatRange } from "@/lib/format";
 import type { TripBrief } from "@/lib/tripBrief";
 import { setPendingSearch, takePendingSearch } from "@/lib/trips";
 import site from "../site/site.module.css";
-import { ArrowDown, ArrowRight, Check, Lock } from "./Icons";
+import { ArrowDown, Plane, Check, Lock } from "./Icons";
 import { EventLookup } from "./EventLookup";
 import styles from "./Landing.module.css";
 import {
@@ -133,7 +133,7 @@ function SubmitRow({ busy }: { busy: boolean }) {
       <p className={styles.assumptions}>Planned for 1 adult, 1 room, economy class.</p>
       <button className={`${styles.signButton} ${styles.signButtonDark}`} type="submit" disabled={busy}>
         <span className={styles.signArrow}>
-          <ArrowRight />
+          <Plane direction="forward" />
         </span>
         <span>{busy ? "Starting search…" : "Find routes"}</span>
       </button>
